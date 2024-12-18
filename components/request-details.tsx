@@ -147,33 +147,39 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {Array.isArray(request.dates) && request.dates.map((date: string, index: number) =>   (
-                  <Badge key={index} variant="outline">
-                  {format(new Date(date), 'PPP', { locale: es })}
-                  </Badge>
-                    ))}
+                  {Array.isArray(request.dates) && request.dates.length > 0 ? (
+                    request.dates.map((date: string, index: number) => (
+                      <Badge key={index} variant="outline">
+                        {format(new Date(date), 'PPP', { locale: es })}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No hay fechas disponibles</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
-
           {request.files && request.files.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Archivos Adjuntos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {request.files.map((file: string, index: number) => (
+              <div className="flex flex-wrap gap-2">
+                {Array.isArray(request.files) && request.files.length > 0 ? (
+                  request.files.map((file: string, index: number) => (
                     <Badge key={index} variant="outline">
                       {file}
                     </Badge>
-                  ))}
-                </div>
-              </CardContent>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No hay archivos adjuntos</p>
+                )}
+              </div>
+            </CardContent>
             </Card>
           )}
-
           {request.status === 'pending' && (
             <Card>
               <CardHeader>
