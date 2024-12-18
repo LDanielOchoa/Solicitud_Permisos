@@ -120,3 +120,74 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
         close_connection(connection)
     
     return {"message": "Solicitud de equipo creada exitosamente"}
+
+@app.get("/requests")
+def get_requests():
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Fetch permit requests
+        cursor.execute("""
+            SELECT id, code, name, telefono as phone, fecha as dates, 
+                   hora as time, tipo_novedad as noveltyType, description,
+                   files, time_created as createdAt, solicitud as status,
+                   respuesta
+            FROM permit_perms
+        """)
+        permit_requests = cursor.fetchall()
+
+        # Fetch equipment requests
+        cursor.execute("""
+            SELECT id, code, name, tipo_novedad as type,
+                   description, time_created as createdAt,
+                   solicitud as status, respuesta
+            FROM permit_post
+        """)
+        equipment_requests = cursor.fetchall()
+        
+        return permit_requests + equipment_requests
+        
+    finally:
+        close_connection(connection)
+
+@app.put("/requests/{request_id}")
+def update_request(
+    request_id: int,
+    request: dict
+):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        # Try updating permit_perms first
+        cursor.execute("""
+            UPDATE permit_perms
+            SET solicitud = %s, respuesta = %s
+            WHERE id = %s
+        """, (request['status'], request.get('respuesta', ''), request_id))
+        
+        if cursor.rowcount == 0:
+            # If no rows were affected, try permit_post
+            cursor.execute("""
+                UPDATE permit_post
+                SET solicitud = %s, respuesta = %s
+                WHERE id = %s
+            """, (request['status'], request.get('respuesta', ''), request_id))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        
+        connection.commit()
+        return {"message": "Solicitud actualizada exitosamente"}
+        
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    finally:
+        close_connection(connection)

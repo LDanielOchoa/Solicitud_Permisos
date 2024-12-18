@@ -147,11 +147,11 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {request.dates.map((date: string, index: number) => (
-                    <Badge key={index} variant="outline">
-                      {format(new Date(date), 'PPP', { locale: es })}
-                    </Badge>
-                  ))}
+                  {Array.isArray(request.dates) && request.dates.map((date: string, index: number) =>   (
+                  <Badge key={index} variant="outline">
+                  {format(new Date(date), 'PPP', { locale: es })}
+                  </Badge>
+                    ))}
                 </div>
               </CardContent>
             </Card>

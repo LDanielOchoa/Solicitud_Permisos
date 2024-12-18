@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "@/components/ui/use-toast"
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +24,7 @@ import LinkManager from '../../components/link-manager'
 import CustomPieChart from '../../components/pie-chart'
 import CustomBarChart from '../../components/bar-chart'
 import CustomLineChart from '../../components/line-chart'
+import { fetchRequests, updateRequestStatus } from '../utils/api'
 
 type Request = {
   id: string
@@ -53,13 +55,29 @@ export default function AdminPanel() {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null)
   const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, approved: 0, rejected: 0 })
   const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
   const requestsPerPage = 5
 
   useEffect(() => {
-    const permitRequests = JSON.parse(localStorage.getItem('permitRequests') || '[]')
-    const equipmentRequests = JSON.parse(localStorage.getItem('equipmentRequests') || '[]')
-    setRequests([...permitRequests, ...equipmentRequests].map((req, index) => ({ ...req, id: `${index}` })))
+    loadRequests()
   }, [])
+
+  const loadRequests = async () => {
+    try {
+      setIsLoading(true)
+      const data = await fetchRequests()
+      setRequests(data)
+    } catch (error) {
+      console.error('Error fetching requests:', error)
+      toast({
+        title: "Error",
+        description: "Error al cargar las solicitudes",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     let filtered = requests.filter(req => activeTab === 'permits' ? 'noveltyType' in req : !('noveltyType' in req))
@@ -96,14 +114,23 @@ export default function AdminPanel() {
     setStats(newStats)
   }, [requests, activeTab, filterType, filterStatus, filterCode, sortOrder])
 
-  const handleRequestAction = (id: string, action: 'approve' | 'reject', reason: string) => {
-    const updatedRequests = requests.map(req => 
-      req.id === id ? { ...req, status: action === 'approve' ? 'approved' : 'rejected', reason } : req
-    )
-    setRequests(updatedRequests)
-    localStorage.setItem('permitRequests', JSON.stringify(updatedRequests.filter(req => 'noveltyType' in req)))
-    localStorage.setItem('equipmentRequests', JSON.stringify(updatedRequests.filter(req => !('noveltyType' in req))))
-    setSelectedRequest(null)
+  const handleRequestAction = async (id: string, action: 'approve' | 'reject', reason: string) => {
+    try {
+      await updateRequestStatus(id, action, reason)
+      await loadRequests()
+      setSelectedRequest(null)
+      toast({
+        title: "Éxito",
+        description: `Solicitud ${action === 'approve' ? 'aprobada' : 'rechazada'} exitosamente`,
+      })
+    } catch (error) {
+      console.error('Error updating request:', error)
+      toast({
+        title: "Error",
+        description: `Error al ${action === 'approve' ? 'aprobar' : 'rechazar'} la solicitud`,
+        variant: "destructive",
+      })
+    }
   }
 
   const getStatusColor = (status: string) => {
