@@ -4,15 +4,49 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Bell } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import NotificationsPanel from './notifications-panel'
+import ProfileMenu from './profile-menu'
+
+interface UserData {
+  code: string
+  name: string
+  phone: string
+}
 
 export default function Navigation() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [userData, setUserData] = useState<UserData | null>(null)
   const pathname = usePathname()
 
   const isFormPage = pathname === '/solicitud-permisos' || pathname === '/solicitud-equipo'
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('accessToken')
+        if (!token) return
+
+        const response = await fetch('http://127.0.0.1:8000/auth/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setUserData(data)
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      }
+    }
+
+    fetchUserData()
+  }, [])
 
   useEffect(() => {
     const updateUnreadCount = () => {
@@ -39,35 +73,73 @@ export default function Navigation() {
     return () => window.removeEventListener('storage', updateUnreadCount)
   }, [])
 
+  const handlePhoneUpdate = async (newPhone: string) => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      if (!token) throw new Error('No token found')
+
+      const response = await fetch('http://127.0.0.1:8000/auth/update-phone', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: newPhone }),
+      })
+
+      if (!response.ok) throw new Error('Failed to update phone')
+
+      setUserData(prev => prev ? { ...prev, phone: newPhone } : null)
+    } catch (error) {
+      console.error('Error updating phone:', error)
+      throw error
+    }
+  }
+
   if (!isFormPage) return null
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white bg-opacity-70 backdrop-blur-lg shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-4">
-            <Link href="/solicitud-permisos" className="text-green-700 hover:text-green-900 px-3 py-2 rounded-md text-sm font-medium">
+    <motion.nav 
+      className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md rounded-lg p-4 mb-8 mx-auto max-w-4xl mt-4"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <Link href="/solicitud-permisos" passHref>
+            <Button variant="ghost" className="text-green-700 hover:text-green-800 hover:bg-green-100">
               Solicitud de Permisos
-            </Link>
-            <Link href="/solicitud-equipo" className="text-green-700 hover:text-green-900 px-3 py-2 rounded-md text-sm font-medium">
-              Solicitud de Equipo
-            </Link>
-          </div>
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
             </Button>
-          </div>
+          </Link>
+          <Link href="/solicitud-equipo" passHref>
+            <Button variant="ghost" className="text-green-700 hover:text-green-800 hover:bg-green-100">
+              Solicitud de Equipo
+            </Button>
+          </Link>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-green-600 hover:text-green-700 hover:bg-green-100"
+            onClick={() => setShowNotifications(!showNotifications)}
+          >
+            <Bell size={24} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
+          {userData && (
+            <ProfileMenu
+              code={userData.code}
+              name={userData.name}
+              phone={userData.phone || ''}
+              onPhoneUpdate={handlePhoneUpdate}
+            />
+          )}
         </div>
       </div>
       {showNotifications && (
@@ -92,7 +164,7 @@ export default function Navigation() {
           }}
         />
       )}
-    </nav>
+    </motion.nav>
   )
 }
 

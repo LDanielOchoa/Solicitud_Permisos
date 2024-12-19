@@ -24,3 +24,6 @@ class PermitRequest(BaseModel):
 class EquipmentRequest(BaseModel):
     type: str
     description: str
+    
+class PhoneUpdate(BaseModel):
+    phone: str

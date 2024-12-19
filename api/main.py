@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from database import create_connection, close_connection
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, PhoneUpdate
 from datetime import timedelta
 
 app = FastAPI()
@@ -184,6 +184,30 @@ def update_request(
         
         connection.commit()
         return {"message": "Solicitud actualizada exitosamente"}
+        
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    finally:
+        close_connection(connection)
+        
+@app.put("/auth/update-phone")
+def update_phone(request: PhoneUpdate, current_user: dict = Depends(get_current_user)):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            UPDATE users
+            SET telefone = %s
+            WHERE code = %s
+        """, (request.phone, current_user['code']))
+        
+        connection.commit()
+        return {"message": "Teléfono actualizado exitosamente"}
         
     except Exception as e:
         connection.rollback()

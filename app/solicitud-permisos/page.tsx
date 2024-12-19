@@ -14,24 +14,6 @@ import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navigation from '../../components/navigation'
 
-const FloatingLeaf = ({ delay }: { delay: number }) => (
-  <motion.div
-    className="absolute w-8 h-8 bg-green-500 rounded-full opacity-50"
-    initial={{ y: -20, x: Math.random() * 100 - 50, opacity: 0 }}
-    animate={{
-      y: ['0%', '100%'],
-      x: ['-50%', '50%', '-50%'],
-      opacity: [0, 1, 0],
-      scale: [0.8, 1, 0.8],
-    }}
-    transition={{
-      duration: 15,
-      repeat: Infinity,
-      delay: delay,
-    }}
-  />
-)
-
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -195,13 +177,8 @@ export default function PermitRequestForm() {
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen via-white to-green-200 flex items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
-      
-      {[...Array(10)].map((_, i) => (
-        <FloatingLeaf key={i} delay={i * 0.5} />
-      ))}
-      
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -275,7 +252,6 @@ export default function PermitRequestForm() {
                   <SelectItem value="semanaPM">Semana P.M.</SelectItem>
                   <SelectItem value="diaAM">Día A.M.</SelectItem>
                   <SelectItem value="diaPM">Día P.M.</SelectItem>
-                  <SelectItem value="tablaPartida">Tabla partida</SelectItem>
                 </SelectContent>
               </Select>
             </div>

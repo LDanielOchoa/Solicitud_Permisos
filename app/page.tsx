@@ -6,13 +6,16 @@ import { motion } from 'framer-motion'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import LoadingOverlay from '../components/loading-overlay'
+import { Eye, EyeOff, User, Lock } from 'lucide-react'
+import LoadingOverlay from '@/components/loading-overlay'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,12 +35,10 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Guardar el token de acceso, el rol y el código en localStorage
         localStorage.setItem('accessToken', data.access_token)
         localStorage.setItem('userRole', data.role)
-        localStorage.setItem('userCode', code)  // Guardar el código del usuario
+        localStorage.setItem('userCode', code)
         
-        // Redirigir según el rol
         if (data.role === 'admin') {
           router.push('/admin')
         } else {
@@ -55,62 +56,121 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200">
+    <div className="min-h-screen from-green-50 flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden relative z-10"
+        className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10"
       >
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <motion.h1
-            initial={{ y: -50 }}
-            animate={{ y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="text-4xl font-bold text-green-700 text-center mb-8"
+        {/* Left side - Login Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-12">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-6"
           >
-            Iniciar Sesión
-          </motion.h1>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code" className="text-green-700">Código</Label>
-              <Input
-                id="code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Ingrese su código"
-                className="border-green-300 focus:ring-green-500"
-                required
-              />
+            <div className="flex justify-center mb-6">
+              <Image src="/sao6.png" alt="Logo" width={100} height={100} />
             </div>
-            {code !== 'sao6admin' && (
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-green-700">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Ingrese su contraseña"
-                  className="border-green-300 focus:ring-green-500"
-                  required
-                />
-              </div>
-            )}
-          </div>
+            <h2 className="text-3xl font-bold text-green-700 text-center">¡Hola!</h2>
+            <p className="text-green-600 text-center">Inicia sesión en tu cuenta</p>
 
-          <Button
-            type="submit"
-            className="w-full bg-green-500 text-white hover:bg-green-600 px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-            disabled={isLoading}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <motion.div
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-4"
+              >
+                <div className="relative">
+                  <Label htmlFor="code" className="text-green-700">Código</Label>
+                  <div className="relative mt-1">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 h-5 w-5" />
+                    <Input
+                      id="code"
+                      type="text"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      className="pl-10 border-green-300 focus:border-green-500 focus:ring-green-500"
+                      placeholder="Ingrese su código"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {code !== 'sao6admin' && (
+                  <div className="relative">
+                    <Label htmlFor="password" className="text-green-700">Contraseña</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 h-5 w-5" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 border-green-300 focus:border-green-500 focus:ring-green-500"
+                        placeholder="Ingrese su contraseña"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 hover:text-green-600"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Button
+                  type="submit"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 rounded-lg transition-all duration-300 transform hover:scale-105"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                </Button>
+              </motion.div>
+
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-500 text-center"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </form>
+          </motion.div>
+        </div>
+
+        {/* Right side - Welcome Message */}
+        <div className="w-full md:w-1/2 bg-green-500 text-white p-12 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-center"
           >
-            {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
-          </Button>
-          
-          {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-        </form>
+            <h2 className="text-4xl font-bold mb-4">¡Bienvenido!</h2>
+            <p className="text-green-100">
+              Sistema de gestión integrado para el control y seguimiento de actividades.
+            </p>
+          </motion.div>
+        </div>
       </motion.div>
 
       {isLoading && <LoadingOverlay />}
