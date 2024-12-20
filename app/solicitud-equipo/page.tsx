@@ -40,7 +40,7 @@ export default function EquipmentRequestForm() {
         const token = localStorage.getItem('accessToken')
         
         if (!token) {
-          router.push('/login')
+          router.push('/')
           return
         }
 
@@ -53,7 +53,7 @@ export default function EquipmentRequestForm() {
 
         if (response.status === 401) {
           localStorage.removeItem('accessToken')
-          router.push('/login')
+          router.push('/')
           return
         }
 
@@ -129,7 +129,7 @@ export default function EquipmentRequestForm() {
           </Alert>
           <div className="mt-4 flex justify-center">
             <Button 
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/')}
               className="bg-green-500 text-white hover:bg-green-600"
             >
               Volver al inicio de sesión

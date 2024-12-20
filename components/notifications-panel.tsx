@@ -39,48 +39,48 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const notificationsPerPage = 5
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch('http://localhost:8000/requests')
-  
-        if (!response.ok) {
-          throw new Error('Failed to fetch notifications')
-        }
-  
-        const data = await response.json()
-        
-        const transformedNotifications = data.map((req: any) => ({
-          id: req.id,
-          uniqueId: `${req.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: req.noveltyType ? 'permiso' : 'equipo',
-          status: req.status || 'pending',
-          date: req.createdAt,
-          description: req.noveltyType 
-            ? `Solicitud de permiso: ${req.noveltyType}`
-            : `Solicitud de equipo: ${req.type}`,
-          reason: req.respuesta,
-          request: req,
-          isRead: false,
-          isHidden: false,
-          notifications: req.notifications
-        }))
-  
-        setNotifications(transformedNotifications)
-      } catch (error) {
-        console.error('Error fetching notifications:', error)
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las notificaciones. Por favor, intente de nuevo más tarde.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-  
     fetchNotifications()
-  }, [])  
+  }, [])
+
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('http://localhost:8000/requests')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications')
+      }
+
+      const data = await response.json()
+      
+      const transformedNotifications = data.map((req: any) => ({
+        id: req.id,
+        uniqueId: `${req.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: req.noveltyType ? 'permiso' : 'equipo',
+        status: req.status || 'pending',
+        date: req.createdAt,
+        description: req.noveltyType 
+          ? `Solicitud de permiso: ${req.noveltyType}`
+          : `Solicitud de equipo: ${req.type}`,
+        reason: req.respuesta,
+        request: req,
+        isRead: false,
+        isHidden: false,
+        notifications: req.notifications
+      }))
+
+      setNotifications(transformedNotifications)
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las notificaciones. Por favor, intente de nuevo más tarde.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const markAsRead = (notificationId: number) => {
     setNotifications(prev => 
@@ -92,27 +92,22 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
 
   const updateNotificationStatus = async (notificationId: number, currentStatus: number) => {
     try {
-      // Alternar entre los estados 1 y 2 según el estado actual
-      const newStatus = currentStatus === 0 ? 1 : 2; 
+      const newStatus = currentStatus === 0 ? 1 : 2
   
-      // Realizar la solicitud al backend
       const response = await fetch(`http://localhost:8000/requests/${notificationId}/notifications`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notification_status: newStatus }),
-      });
+      })
   
-      // Verificar si la respuesta fue exitosa
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.detail || 'Error al actualizar el estado de la notificación';
-        throw new Error(errorMessage);
+        const errorData = await response.json()
+        const errorMessage = errorData.detail || 'Error al actualizar el estado de la notificación'
+        throw new Error(errorMessage)
       }
   
-      // Obtener la notificación actualizada del backend
-      const updatedNotification = await response.json();
+      const updatedNotification = await response.json()
   
-      // Actualizar las notificaciones en el estado local
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === notificationId
@@ -123,40 +118,70 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
               }
             : notif
         )
-      );
+      )
   
-      // Mostrar mensaje de éxito al usuario
-      console.log('Notification status updated successfully:', updatedNotification);
+      console.log('Notification status updated successfully:', updatedNotification)
       toast({
         title: "Éxito",
         description: "El estado de la notificación se ha actualizado correctamente.",
-      });
+      })
     } catch (error) {
-      // Manejo adecuado del tipo 'unknown' en el bloque catch
       if (error instanceof Error) {
-        console.error('Error updating notification status:', error.message);
+        console.error('Error updating notification status:', error.message)
         toast({
           title: "Error",
           description: error.message || "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
           variant: "destructive",
-        });
+        })
       } else {
-        console.error('Unknown error:', error);
+        console.error('Unknown error:', error)
         toast({
           title: "Error",
           description: "Ocurrió un error desconocido. Por favor, intente de nuevo.",
           variant: "destructive",
-        });
+        })
       }
-      throw error; // Propagar el error si es necesario
+      throw error
     }
-  };
-  
+  }
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      setIsLoading(true)
+      const notificationsToUpdate = notifications.filter(n => n.notifications === 0 && n.status !== 'pending')
+      
+      for (const notification of notificationsToUpdate) {
+        await updateNotificationStatus(notification.id, 0)
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Todas las notificaciones han sido marcadas como leídas.",
+      })
+
+      onMarkAllAsRead()
+      await fetchNotifications()
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+      toast({
+        title: "Error",
+        description: "No se pudieron marcar todas las notificaciones como leídas. Por favor, intente de nuevo.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredNotifications = notifications
     .filter(notification => {
-      if (filter === 'all') return notification.notifications !== 2;
-      return notification.type === filter && notification.notifications !== 2;
+      if (filter === 'pending') {
+        return notification.status === 'pending'
+      }
+      if (filter === 'all') {
+        return notification.notifications === 0 || notification.status === 'pending'
+      }
+      return notification.type === filter && (notification.notifications === 0 || notification.status === 'pending')
     })
     .sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -212,7 +237,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={onMarkAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="text-sm hidden md:flex text-green-700 hover:text-green-900 hover:bg-green-200"
             >
               <CheckCheck className="w-4 h-4 mr-2" />
@@ -235,6 +260,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="pending">Pendientes</SelectItem>
                 <SelectItem value="permiso">Permisos</SelectItem>
                 <SelectItem value="equipo">Equipos</SelectItem>
               </SelectContent>
@@ -283,30 +309,32 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
                     hover:shadow-md
                   `}
                   onClick={() => {
-                    setSelectedNotification(notification);
-                    markAsRead(notification.id);
-                    if (notification.notifications === 0) {
+                    setSelectedNotification(notification)
+                    markAsRead(notification.id)
+                    if (notification.notifications === 0 && notification.status !== 'pending') {
                       updateNotificationStatus(notification.id, notification.notifications)
                         .catch(error => {
-                          console.error('Failed to update notification status:', error);
+                          console.error('Failed to update notification status:', error)
                           toast({
                             title: "Error",
                             description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
                             variant: "destructive",
                           })
-                        });
+                        })
                     }
                   }}
                   onDoubleClick={() => {
-                    updateNotificationStatus(notification.id, notification.notifications)
-                      .catch(error => {
-                        console.error('Failed to update notification status:', error);
-                        toast({
-                          title: "Error",
-                          description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
-                          variant: "destructive",
+                    if (notification.status !== 'pending') {
+                      updateNotificationStatus(notification.id, notification.notifications)
+                        .catch(error => {
+                          console.error('Failed to update notification status:', error)
+                          toast({
+                            title: "Error",
+                            description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
+                            variant: "destructive",
+                          })
                         })
-                      });
+                    }
                   }}
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -326,7 +354,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
                       <strong>Razón:</strong> {notification.reason}
                     </div>
                   )}
-                  {!notification.isRead && (
+                  {!notification.isRead && notification.status !== 'pending' && (
                     <motion.div
                       className="absolute top-2 right-2"
                       initial={{ scale: 0 }}
