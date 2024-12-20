@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime  
 
 class LoginRequest(BaseModel):
     code: str
@@ -32,3 +33,14 @@ class PhoneUpdate(BaseModel):
 
 class NotificationStatusUpdate(BaseModel):
     notification_status: int
+    
+class SolicitudResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    tipo_novedad: str
+    description: str
+    status: str
+    respuesta: str
+    zona: str | None
+    createdAt: datetime

@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from database import create_connection, close_connection
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate
-from datetime import timedelta
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse
+from datetime import timedelta, datetime
+from typing import List
+import json
+
 
 app = FastAPI()
 
@@ -155,6 +158,47 @@ def get_requests():
     finally:
         close_connection(connection)
 
+@app.put("/requests/{request_id}")
+def update_request(
+    request_id: int,
+    request: dict
+):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        # Try updating permit_perms first
+        cursor.execute("""
+            UPDATE permit_perms
+            SET solicitud = %s, respuesta = %s
+            WHERE id = %s
+        """, (request['status'], request.get('respuesta', ''), request_id))
+        
+        if cursor.rowcount == 0:
+            # If no rows were affected, try permit_post
+            cursor.execute("""
+                UPDATE permit_post
+                SET solicitud = %s, respuesta = %s
+                WHERE id = %s
+            """, (request['status'], request.get('respuesta', ''), request_id))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        
+        connection.commit()
+        return {"message": "Solicitud actualizada exitosamente"}
+        
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    finally:
+        close_connection(connection)
+        
+        
+
 @app.put("/requests/{request_id}/notifications")
 def update_notification_status(
     request_id: int,
@@ -191,5 +235,66 @@ def update_notification_status(
     except Exception as e:
         connection.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        close_connection(connection)
+
+@app.get("/solicitudes")
+def get_solicitudes(current_user: dict = Depends(get_current_user)):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Obtener solicitudes de permisos
+        cursor.execute("""
+            SELECT 
+                id,
+                code,
+                name,
+                tipo_novedad,
+                description,
+                solicitud as status,
+                respuesta,
+                '' as zona,
+                time_created as createdAt
+            FROM permit_perms
+            WHERE code = %s AND solicitud IN ('approved', 'rejected')
+        """, (current_user['code'],))
+        permit_requests = cursor.fetchall()
+
+        # Obtener solicitudes de equipos
+        cursor.execute("""
+            SELECT 
+                id,
+                code,
+                name,
+                tipo_novedad,
+                description,
+                solicitud as status,
+                respuesta,
+                zona,
+                time_created as createdAt
+            FROM permit_post
+            WHERE code = %s AND solicitud IN ('approved', 'rejected')
+        """, (current_user['code'],))
+        equipment_requests = cursor.fetchall()
+        
+        # Combinar todas las solicitudes
+        all_requests = permit_requests + equipment_requests
+        
+        # Convertir datetime a string
+        for request in all_requests:
+            if isinstance(request['createdAt'], datetime):
+                request['createdAt'] = request['createdAt'].isoformat()
+        
+        return JSONResponse(content=json.loads(json.dumps(all_requests, default=str)))
+        
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener las solicitudes: {str(e)}"
+        )
     finally:
         close_connection(connection)

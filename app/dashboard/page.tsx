@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Briefcase } from 'lucide-react'
+import { FileText, Briefcase, List } from 'lucide-react'
 import Navigation from '../../components/navigation'
 import AnimatedDashboardButton from '../../components/AnimatedDashboardButton'
 import WelcomeBar from '../../components/WelcomeBar'
@@ -46,7 +46,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8"
         >
           <AnimatedDashboardButton
             href="/solicitud-permisos"
@@ -62,10 +62,16 @@ export default function Dashboard() {
             description="Solicite aqui los turno pareja, tabla partida y disponible fijo."
             color="bg-gradient-to-br from-green-600 to-green-700"
           />
+          <AnimatedDashboardButton
+            href="/solicitudes-global"
+            icon={List}
+            title="Mis Solicitudes"
+            description="Ver todas sus solicitudes aceptadas y rechazadas."
+            color="bg-gradient-to-br from-green-500 to-green-600"
+          />
         </motion.div>
       </div>
     </div>
   )
 }
-
 
