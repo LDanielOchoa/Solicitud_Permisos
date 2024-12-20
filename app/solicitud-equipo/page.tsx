@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Loader2, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navigation from '../../components/navigation'
+import LoadingOverlay from '../../components/loading-overlay'
 
 export default function EquipmentRequestForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [userData, setUserData] = useState({ code: '', name: '' })
   const [error, setError] = useState('')
@@ -51,6 +53,8 @@ export default function EquipmentRequestForm() {
       } catch (error) {
         console.error('Error fetching user data:', error)
         setError('No se pudieron cargar los datos del usuario. Por favor, inicie sesión nuevamente.')
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -59,7 +63,7 @@ export default function EquipmentRequestForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     const formData = {
       type: (e.target as HTMLFormElement).type.value,
@@ -93,7 +97,7 @@ export default function EquipmentRequestForm() {
       console.error('Error:', error)
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
       // Reset success after 3 seconds
       setTimeout(() => setIsSuccess(false), 3000)
     }
@@ -123,6 +127,7 @@ export default function EquipmentRequestForm() {
   return (
     <div className="min-h-screen via-white to-green-200 flex items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
+      {(isLoading || isSubmitting) && <LoadingOverlay />}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -186,12 +191,12 @@ export default function EquipmentRequestForm() {
             <Button
               type="submit"
               className="bg-green-500 text-white hover:bg-green-600 px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              {isLoading ? 'Enviando...' : 'Enviar Solicitud'}
+              {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
             </Button>
           </div>
         </form>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 
 export default function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <motion.div
         initial={{ rotate: 0 }}
         animate={{ rotate: 360 }}

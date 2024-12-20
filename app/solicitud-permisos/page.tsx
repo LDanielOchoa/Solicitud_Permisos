@@ -13,6 +13,7 @@ import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navigation from '../../components/navigation'
+import LoadingOverlay from '../../components/loading-overlay'
 
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
@@ -65,17 +66,7 @@ export default function PermitRequestForm() {
   }, [router])
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex items-center justify-center p-4">
-        <div className="bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl p-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-green-200 rounded w-64"></div>
-            <div className="h-12 bg-green-100 rounded"></div>
-            <div className="h-12 bg-green-100 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingOverlay />
   }
 
   if (error) {
@@ -179,6 +170,7 @@ export default function PermitRequestForm() {
   return (
     <div className="min-h-screen via-white to-green-200 flex items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
+      {isLoading && <LoadingOverlay />}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

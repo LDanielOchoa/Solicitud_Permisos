@@ -100,46 +100,58 @@ export default function Navigation() {
 
   return (
     <motion.nav 
-      className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md rounded-lg p-4 mb-8 mx-auto max-w-4xl mt-4"
+      className="fixed top-4 left-0 right-0 z-50"
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Link href="/solicitud-permisos" passHref>
-            <Button variant="ghost" className="text-green-700 hover:text-green-800 hover:bg-green-100">
-              Solicitud de Permisos
-            </Button>
-          </Link>
-          <Link href="/solicitud-equipo" passHref>
-            <Button variant="ghost" className="text-green-700 hover:text-green-800 hover:bg-green-100">
-              Solicitud de Equipo
-            </Button>
-          </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative text-green-600 hover:text-green-700 hover:bg-green-100"
-            onClick={() => setShowNotifications(!showNotifications)}
-          >
-            <Bell size={24} />
-            {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </Button>
-          {userData && (
-            <ProfileMenu
-              code={userData.code}
-              name={userData.name}
-              phone={userData.phone || ''}
-              onPhoneUpdate={handlePhoneUpdate}
-            />
-          )}
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Link href="/solicitud-permisos" passHref>
+                <Button 
+                  variant="ghost" 
+                  className="text-green-700 hover:text-green-800 hover:bg-green-100"
+                >
+                  <span className="hidden sm:inline">Solicitud de </span>
+                  Permisos
+                </Button>
+              </Link>
+              <Link href="/solicitud-equipo" passHref>
+                <Button 
+                  variant="ghost" 
+                  className="text-green-700 hover:text-green-800 hover:bg-green-100"
+                >
+                  <span className="hidden sm:inline">Solicitud de </span>
+                  Equipo
+                </Button>
+              </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-green-600 hover:text-green-700 hover:bg-green-100"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell size={24} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+              {userData && (
+                <ProfileMenu
+                  code={userData.code}
+                  name={userData.name}
+                  phone={userData.phone}
+                  onPhoneUpdate={handlePhoneUpdate}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
       {showNotifications && (

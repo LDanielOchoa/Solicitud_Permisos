@@ -12,7 +12,7 @@ class LoginResponse(BaseModel):
 class UserResponse(BaseModel):
     code: str
     name: str
-
+    phone: Optional[str] = None
 class PermitRequest(BaseModel):
     phone: str
     dates: List[str]
@@ -27,3 +27,7 @@ class EquipmentRequest(BaseModel):
     
 class PhoneUpdate(BaseModel):
     phone: str
+
+
+class NotificationStatusUpdate(BaseModel):
+    notification_status: int

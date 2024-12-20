@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from database import create_connection, close_connection
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, PhoneUpdate
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate
 from datetime import timedelta
 
 app = FastAPI()
@@ -134,7 +134,7 @@ def get_requests():
             SELECT id, code, name, telefono as phone, fecha as dates, 
                    hora as time, tipo_novedad as noveltyType, description,
                    files, time_created as createdAt, solicitud as status,
-                   respuesta
+                   respuesta, notifications
             FROM permit_perms
         """)
         permit_requests = cursor.fetchall()
@@ -143,7 +143,7 @@ def get_requests():
         cursor.execute("""
             SELECT id, code, name, tipo_novedad as type,
                    description, time_created as createdAt,
-                   solicitud as status, respuesta
+                   solicitud as status, respuesta, notifications
             FROM permit_post
         """)
         equipment_requests = cursor.fetchall()
@@ -153,65 +153,41 @@ def get_requests():
     finally:
         close_connection(connection)
 
-@app.put("/requests/{request_id}")
-def update_request(
+@app.put("/requests/{request_id}/notifications")
+def update_notification_status(
     request_id: int,
-    request: dict
+    payload: NotificationStatusUpdate
 ):
+    print("Request payload:", payload)
     connection = create_connection()
     if connection is None:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
     
     cursor = connection.cursor()
     try:
-        # Try updating permit_perms first
+        # Intentar actualizar en permit_perms primero
         cursor.execute("""
             UPDATE permit_perms
-            SET solicitud = %s, respuesta = %s
+            SET notifications = %s
             WHERE id = %s
-        """, (request['status'], request.get('respuesta', ''), request_id))
+        """, (payload.notification_status, request_id))
         
         if cursor.rowcount == 0:
-            # If no rows were affected, try permit_post
+            # Intentar en permit_post si no hubo coincidencia
             cursor.execute("""
                 UPDATE permit_post
-                SET solicitud = %s, respuesta = %s
+                SET notifications = %s
                 WHERE id = %s
-            """, (request['status'], request.get('respuesta', ''), request_id))
+            """, (payload.notification_status, request_id))
             
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Solicitud no encontrada")
         
         connection.commit()
-        return {"message": "Solicitud actualizada exitosamente"}
+        return {"message": "Estado de notificación actualizado exitosamente"}
         
     except Exception as e:
         connection.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-        
-    finally:
-        close_connection(connection)
-        
-@app.put("/auth/update-phone")
-def update_phone(request: PhoneUpdate, current_user: dict = Depends(get_current_user)):
-    connection = create_connection()
-    if connection is None:
-        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
-    
-    cursor = connection.cursor()
-    try:
-        cursor.execute("""
-            UPDATE users
-            SET telefone = %s
-            WHERE code = %s
-        """, (request.phone, current_user['code']))
-        
-        connection.commit()
-        return {"message": "Teléfono actualizado exitosamente"}
-        
-    except Exception as e:
-        connection.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-        
     finally:
         close_connection(connection)

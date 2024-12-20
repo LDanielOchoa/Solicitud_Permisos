@@ -23,13 +23,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface ProfileMenuProps {
   code: string
   name: string
-  phone: string
+  phone: string | null
   onPhoneUpdate: (newPhone: string) => Promise<void>
 }
 
 export default function ProfileMenu({ code, name, phone, onPhoneUpdate }: ProfileMenuProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [newPhone, setNewPhone] = useState(phone)
+  const [newPhone, setNewPhone] = useState(phone || '')
   const [isLoading, setIsLoading] = useState(false)
 
   const handlePhoneUpdate = async () => {
@@ -52,7 +52,7 @@ export default function ProfileMenu({ code, name, phone, onPhoneUpdate }: Profil
             <User size={24} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
+        <DropdownMenuContent className="w-56 md:w-64">
           <DropdownMenuLabel>Mi Perfil</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="flex flex-col items-start">
