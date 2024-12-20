@@ -41,7 +41,7 @@ export default function Navigation() {
           setUserData(data)
         }
       } catch (error) {
-        console.error('Error fetching user data:', error)
+        console.error('Error accediendo a los datos ', error)
       }
     }
 
@@ -76,7 +76,7 @@ export default function Navigation() {
   const handlePhoneUpdate = async (newPhone: string) => {
     try {
       const token = localStorage.getItem('accessToken')
-      if (!token) throw new Error('No token found')
+      if (!token) throw new Error('El token no funciona')
 
       const response = await fetch('http://127.0.0.1:8000/auth/update-phone', {
         method: 'PUT',
@@ -87,11 +87,11 @@ export default function Navigation() {
         body: JSON.stringify({ phone: newPhone }),
       })
 
-      if (!response.ok) throw new Error('Failed to update phone')
+      if (!response.ok) throw new Error('Error al actualizar el teléfono')
 
       setUserData(prev => prev ? { ...prev, phone: newPhone } : null)
     } catch (error) {
-      console.error('Error updating phone:', error)
+      console.error('Error actualizando el telefono', error)
       throw error
     }
   }

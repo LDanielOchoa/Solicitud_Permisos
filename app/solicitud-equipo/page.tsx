@@ -40,7 +40,7 @@ export default function EquipmentRequestForm() {
         const token = localStorage.getItem('accessToken')
         
         if (!token) {
-          router.push('/')
+          router.push('/login')
           return
         }
 
@@ -53,7 +53,7 @@ export default function EquipmentRequestForm() {
 
         if (response.status === 401) {
           localStorage.removeItem('accessToken')
-          router.push('/')
+          router.push('/login')
           return
         }
 
@@ -129,7 +129,7 @@ export default function EquipmentRequestForm() {
           </Alert>
           <div className="mt-4 flex justify-center">
             <Button 
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/login')}
               className="bg-green-500 text-white hover:bg-green-600"
             >
               Volver al inicio de sesión
@@ -141,21 +141,21 @@ export default function EquipmentRequestForm() {
   }
 
   return (
-    <div className="min-h-screen via-white to-green-200 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
       {(isLoading || isSubmitting) && <LoadingOverlay />}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden relative z-10"
+        className="w-full max-w-4xl bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden relative z-10 px-4 sm:px-6 md:px-8"
       >
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4 sm:space-y-6">
           <motion.h1
             initial={{ y: -50 }}
             animate={{ y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="text-4xl font-bold text-green-700 text-center mb-8"
+            className="text-3xl sm:text-4xl font-bold text-green-700 text-center mb-6 sm:mb-8"
           >
             Solicitud de Equipo
           </motion.h1>
@@ -226,10 +226,10 @@ export default function EquipmentRequestForm() {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center">
+          <div className="mt-6 sm:mt-8 flex justify-center">
             <Button
               type="submit"
-              className="bg-green-500 text-white hover:bg-green-600 px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+              className="bg-green-500 text-white hover:bg-green-600 px-6 sm:px-8 py-2 sm:py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg w-full sm:w-auto"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

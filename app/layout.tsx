@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Employee Portal',
-  description: 'Manage your requests and equipment',
+  title: 'Link de permisos operacionales',
+  description: 'Control de permisos operacionales sao6', 
 }
 
 export default function RootLayout({
