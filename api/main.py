@@ -99,13 +99,14 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
     cursor = connection.cursor()
     try:
         cursor.execute("""
-            INSERT INTO permit_post (code, name, tipo_novedad, description)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO permit_post (code, name, tipo_novedad, description, zona)
+            VALUES (%s, %s, %s, %s, %s)
         """, (
             current_user['code'],
             current_user['name'],
             request.type,
-            request.description
+            request.description,
+            request.zona
         ))
         connection.commit()
         
@@ -120,6 +121,7 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
         close_connection(connection)
     
     return {"message": "Solicitud de equipo creada exitosamente"}
+
 
 @app.get("/requests")
 def get_requests():

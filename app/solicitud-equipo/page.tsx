@@ -19,7 +19,20 @@ export default function EquipmentRequestForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [userData, setUserData] = useState({ code: '', name: '' })
   const [error, setError] = useState('')
+  const [selectedType, setSelectedType] = useState('')
   const router = useRouter()
+
+  const zones = [
+    "Acevedo",
+    "Tricentenario",
+    "Universidad-gardel",
+    "Hospital",
+    "Prado",
+    "Cruz",
+    "San Antonio",
+    "Exposiciones",
+    "Alejandro"
+  ]
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -65,9 +78,11 @@ export default function EquipmentRequestForm() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    const formElement = e.target as HTMLFormElement
     const formData = {
-      type: (e.target as HTMLFormElement).type.value,
-      description: (e.target as HTMLFormElement).description.value,
+      type: formElement.type.value,
+      description: formElement.description.value,
+      zona: selectedType === 'Tabla partida' ? formElement.zona.value : undefined
     }
 
     try {
@@ -92,7 +107,8 @@ export default function EquipmentRequestForm() {
 
       setIsSuccess(true);
       // Reset the form
-      (e.target as HTMLFormElement).reset()
+      formElement.reset()
+      setSelectedType('')
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
@@ -165,7 +181,11 @@ export default function EquipmentRequestForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="type" className="text-green-700">Tipo de equipo</Label>
-              <Select required name="type">
+              <Select 
+                required 
+                name="type" 
+                onValueChange={(value) => setSelectedType(value)}
+              >
                 <SelectTrigger className="border-green-300 focus:ring-green-500">
                   <SelectValue placeholder="Seleccione el tipo" />
                 </SelectTrigger>
@@ -176,6 +196,25 @@ export default function EquipmentRequestForm() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {selectedType === 'Tabla partida' && (
+              <div className="space-y-2">
+                <Label htmlFor="zona" className="text-green-700">Selecciona la zona</Label>
+                <Select required name="zona">
+                  <SelectTrigger className="border-green-300 focus:ring-green-500">
+                    <SelectValue placeholder="Seleccione la zona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {zones.map((zone) => (
+                      <SelectItem key={zone} value={zone}>
+                        {zone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="description" className="text-green-700">Descripción de la solicitud</Label>
               <Textarea

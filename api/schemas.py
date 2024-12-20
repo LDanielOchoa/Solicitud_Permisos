@@ -24,6 +24,7 @@ class PermitRequest(BaseModel):
 class EquipmentRequest(BaseModel):
     type: str
     description: str
+    zona: Optional[str] = None
     
 class PhoneUpdate(BaseModel):
     phone: str
