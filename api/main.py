@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from database import create_connection, close_connection
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest
 from datetime import timedelta, datetime
 from typing import List
 import json
@@ -43,7 +43,34 @@ def login(request: LoginRequest):
 
 @app.get("/auth/user", response_model=UserResponse)
 def get_user_info(current_user: dict = Depends(get_current_user)):
-    return {"code": current_user['code'], "name": current_user['name']}
+    return {"code": current_user['code'], "name": current_user['name'], "phone": current_user['telefone']}
+
+@app.post("/update-phone")
+def update_phone(request: UpdatePhoneRequest, current_user: dict = Depends(get_current_user)):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            UPDATE users 
+            SET telefone = %s
+            WHERE code = %s
+        """, (request.phone, current_user['code']))
+        connection.commit()
+        
+    except Exception as e:
+        connection.rollback()
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al actualizar el número de teléfono: {str(e)}"
+        )
+    finally:
+        close_connection(connection)
+    
+    return {"message": "Número de teléfono actualizado exitosamente"}
 
 @app.post("/permit-request")
 def create_permit_request(request: PermitRequest, current_user: dict = Depends(get_current_user)):

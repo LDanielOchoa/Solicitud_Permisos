@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { Loader2, X, Upload, FileText, AlertCircle } from 'lucide-react'
 import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 
@@ -21,9 +22,12 @@ export default function PermitRequestForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSuccess, setIsSuccess] = useState(false)
   const [noveltyType, setNoveltyType] = useState('')
-  const [userData, setUserData] = useState({ code: '', name: '' })
+  const [userData, setUserData] = useState({ code: '', name: '', phone: '' })
   const [error, setError] = useState('')
+  const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
+  const [newPhoneNumber, setNewPhoneNumber] = useState('')
   const router = useRouter()
+  const phoneInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -53,7 +57,7 @@ export default function PermitRequestForm() {
         }
 
         const data = await response.json()
-        setUserData({ code: data.code, name: data.name })
+        setUserData({ code: data.code, name: data.name, phone: data.phone || '' })
       } catch (error) {
         console.error('Error fetching user data:', error)
         setError('No se pudieron cargar los datos del usuario. Por favor, inicie sesión nuevamente.')
@@ -64,6 +68,44 @@ export default function PermitRequestForm() {
 
     fetchUserData()
   }, [router])
+
+  const handlePhoneDoubleClick = () => {
+    setIsPhoneDialogOpen(true)
+    setNewPhoneNumber(userData.phone)
+  }
+
+  const updatePhoneNumber = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('accessToken')
+      if (!token) {
+        throw new Error('No se encontró el token de acceso')
+      }
+
+      const response = await fetch('http://127.0.0.1:8000/update-phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone: newPhoneNumber }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el número de teléfono')
+      }
+
+      setUserData(prev => ({ ...prev, phone: newPhoneNumber }))
+      setIsPhoneDialogOpen(false)
+      setIsSuccess(true)
+      setTimeout(() => setIsSuccess(false), 3000)
+    } catch (error) {
+      console.error('Error:', error)
+      setError('Ocurrió un error al actualizar el número de teléfono. Por favor, inténtelo de nuevo.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (isLoading) {
     return <LoadingOverlay />
@@ -122,7 +164,7 @@ export default function PermitRequestForm() {
     const formData = {
       code: userData.code,
       name: userData.name,
-      phone: (e.target as HTMLFormElement).phone.value,
+      phone: userData.phone,
       dates: selectedDates.map(date => format(date, 'yyyy-MM-dd')),
       noveltyType,
       time: (e.target as HTMLFormElement).time?.value || '',
@@ -170,7 +212,9 @@ export default function PermitRequestForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
-      {isLoading && <LoadingOverlay />}
+      <AnimatePresence>
+        {isLoading && <LoadingOverlay />}
+      </AnimatePresence>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -208,7 +252,16 @@ export default function PermitRequestForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-green-700">Teléfono de contacto</Label>
-              <Input id="phone" type="tel" placeholder="Ingrese su teléfono" className="border-green-300 focus:ring-green-500" required />
+              <Input
+                id="phone"
+                type="tel"
+                value={userData.phone}
+                onDoubleClick={handlePhoneDoubleClick}
+                readOnly
+                placeholder="Haga doble clic para editar"
+                className="border-green-300 focus:ring-green-500 cursor-pointer"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-green-700">Fechas de solicitud</Label>
@@ -343,6 +396,30 @@ export default function PermitRequestForm() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Actualizar número de teléfono</DialogTitle>
+          </DialogHeader>
+          <Input
+            type="tel"
+            value={newPhoneNumber}
+            onChange={(e) => setNewPhoneNumber(e.target.value)}
+            placeholder="Ingrese el nuevo número de teléfono"
+            className="mt-2"
+            ref={phoneInputRef}
+          />
+          <DialogFooter>
+            <Button onClick={() => setIsPhoneDialogOpen(false)} variant="outline">
+              Cancelar
+            </Button>
+            <Button onClick={updatePhoneNumber} className="bg-green-500 text-white hover:bg-green-600">
+              Actualizar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

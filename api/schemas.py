@@ -14,6 +14,10 @@ class UserResponse(BaseModel):
     code: str
     name: str
     phone: Optional[str] = None
+
+class UpdatePhoneRequest(BaseModel):
+    phone: str
+
 class PermitRequest(BaseModel):
     phone: str
     dates: List[str]
