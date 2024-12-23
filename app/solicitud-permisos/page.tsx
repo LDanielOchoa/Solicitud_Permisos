@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, X, Upload, FileText, AlertCircle } from 'lucide-react'
+import { Loader2, X, Upload, FileText, AlertCircle, Calendar, Clock } from 'lucide-react'
 import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -23,11 +23,13 @@ export default function PermitRequestForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [noveltyType, setNoveltyType] = useState('')
   const [userData, setUserData] = useState({ code: '', name: '', phone: '' })
-  const [error, setError] = useState('') // Added state for error
+  const [error, setError] = useState('')
   const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
   const [newPhoneNumber, setNewPhoneNumber] = useState('')
-  const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false) // Added state for confirmation dialog
-  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false); // Added state for error dialog
+  const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false)
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
+  const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
+  const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -136,17 +138,28 @@ export default function PermitRequestForm() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDates(prev => {
-      const isAlreadySelected = prev.some(d => isSameDay(d, date))
-      let newDates = isAlreadySelected
-        ? prev.filter(d => !isSameDay(d, date))
-        : [...prev, date]
+      const isAlreadySelected = prev.some(d => isSameDay(d, date));
+      let newDates;
     
-    if (newDates.length >= 2 && noveltyType === 'descanso') {
-      setIsConfirmationDialogOpen(true)
-    }
+      if (noveltyType === 'audiencia' || noveltyType === 'cita') {
+        newDates = isAlreadySelected ? [] : [date];
+      } else {
+        newDates = isAlreadySelected
+          ? prev.filter(d => !isSameDay(d, date))
+          : [...prev, date];
+        
+        if (newDates.length >= 2 && noveltyType === 'descanso') {
+          setIsConfirmationDialogOpen(true);
+        }
+
+        if (noveltyType === 'licencia' && newDates.length === 3 && !hasShownLicenseNotification) {
+          setIsLicenseNotificationOpen(true);
+          setHasShownLicenseNotification(true);
+        }
+      }
     
-    return newDates
-    })
+      return newDates;
+    });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +216,7 @@ export default function PermitRequestForm() {
       setSelectedDates([])
       setSelectedFiles([])
       setNoveltyType('')
+      setHasShownLicenseNotification(false)
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
@@ -284,10 +298,11 @@ export default function PermitRequestForm() {
                 required 
                 onValueChange={(value) => {
                   if (value === 'descanso' && selectedDates.length >= 2) {
-                    setIsErrorDialogOpen(false); // Added line
+                    setIsErrorDialogOpen(false);
                   } else {
                     setNoveltyType(value)
                     setError('')
+                    setHasShownLicenseNotification(false)
                   }
                 }}
                 value={noveltyType}
@@ -306,9 +321,6 @@ export default function PermitRequestForm() {
                   <SelectItem value="diaPM">Día P.M.</SelectItem>
                 </SelectContent>
               </Select>
-              {/* {error && (
-                <p className="text-red-500 text-sm mt-1">{error}</p>
-              )} */}
             </div>
             <div className="space-y-2">
               <Label className="text-green-700">Fechas de solicitud</Label>
@@ -451,7 +463,7 @@ export default function PermitRequestForm() {
       </Dialog>
 
       <Dialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]" hideCloseButton>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Cambio de tipo de solicitud</DialogTitle>
           </DialogHeader>
@@ -472,6 +484,43 @@ export default function PermitRequestForm() {
             <DialogTitle>Error en la selección</DialogTitle>
           </DialogHeader>
           <p>{error}</p>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isLicenseNotificationOpen} onOpenChange={setIsLicenseNotificationOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-green-700">Notificación Importante</DialogTitle>
+          </DialogHeader>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center justify-center py-6"
+          >
+            <Calendar className="w-16 h-16 text-green-500 mb-4" />
+            <p className="text-center text-lg font-semibold mb-4">
+              Ha seleccionado 3 o más días para una licencia no remunerada.
+            </p>
+            <motion.p
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3, yoyo: Infinity, repeatDelay: 0.5 }}
+              className="text-center text-green-600 font-bold"
+            >
+              Este requerimiento será evaluado por el coordinador de operaciones.
+            </motion.p>
+            <p className="text-center mt-4">
+              La respuesta a su solicitud se le notificará oportunamente.
+            </p>
+          </motion.div>
+          <DialogFooter>
+            <Button 
+              onClick={() => setIsLicenseNotificationOpen(false)} 
+              className="bg-green-500 text-white hover:bg-green-600 px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            >
+              Entendido
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

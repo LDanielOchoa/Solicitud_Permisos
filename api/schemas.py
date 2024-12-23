@@ -30,6 +30,9 @@ class EquipmentRequest(BaseModel):
     type: str
     description: str
     zona: Optional[str] = None
+    codeAM: Optional[str] = None
+    codePM: Optional[str] = None
+    shift: Optional[str] = None
     
 class PhoneUpdate(BaseModel):
     phone: str

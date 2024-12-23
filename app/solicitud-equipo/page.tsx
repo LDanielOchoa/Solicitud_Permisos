@@ -20,6 +20,9 @@ export default function EquipmentRequestForm() {
   const [userData, setUserData] = useState({ code: '', name: '' })
   const [error, setError] = useState('')
   const [selectedType, setSelectedType] = useState('')
+  const [codeAM, setCodeAM] = useState('')
+  const [codePM, setCodePM] = useState('')
+  const [zone, setZone] = useState('')
   const router = useRouter()
 
   const zones = [
@@ -82,7 +85,10 @@ export default function EquipmentRequestForm() {
     const formData = {
       type: formElement.type.value,
       description: formElement.description.value,
-      zona: selectedType === 'Tabla partida' ? formElement.zona.value : undefined
+      zona: (selectedType === 'Turno pareja' || selectedType === 'Tabla partida') ? zone : undefined,
+      codeAM: selectedType === 'Turno pareja' ? codeAM : undefined,
+      codePM: selectedType === 'Turno pareja' ? codePM : undefined,
+      shift: selectedType === 'Disponible fijo' ? formElement.fixedShift?.value : undefined,
     }
 
     try {
@@ -109,12 +115,14 @@ export default function EquipmentRequestForm() {
       // Reset the form
       formElement.reset()
       setSelectedType('')
+      setCodeAM('')
+      setCodePM('')
+      setZone('')
     } catch (error) {
       console.error('Error:', error)
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
       setIsSubmitting(false)
-      // Reset success after 3 seconds
       setTimeout(() => setIsSuccess(false), 3000)
     }
   }
@@ -197,10 +205,39 @@ export default function EquipmentRequestForm() {
               </Select>
             </div>
             
-            {selectedType === 'Tabla partida' && (
+            {selectedType === 'Turno pareja' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="codeAM" className="text-green-700">Código Turno AM</Label>
+                  <Input
+                    id="codeAM"
+                    value={codeAM}
+                    onChange={(e) => setCodeAM(e.target.value)}
+                    className="border-green-300 focus:ring-green-500"
+                    placeholder="Código AM"
+                    required
+                  />
+                  <div className="text-sm text-green-700 mt-1">Turno AM</div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="codePM" className="text-green-700">Código Turno PM</Label>
+                  <Input
+                    id="codePM"
+                    value={codePM}
+                    onChange={(e) => setCodePM(e.target.value)}
+                    className="border-green-300 focus:ring-green-500"
+                    placeholder="Código PM"
+                    required
+                  />
+                  <div className="text-sm text-green-700 mt-1">Turno PM</div>
+                </div>
+              </div>
+            )}
+
+            {(selectedType === 'Turno pareja' || selectedType === 'Tabla partida') && (
               <div className="space-y-2">
                 <Label htmlFor="zona" className="text-green-700">Selecciona la zona</Label>
-                <Select required name="zona">
+                <Select required name="zona" onValueChange={setZone}>
                   <SelectTrigger className="border-green-300 focus:ring-green-500">
                     <SelectValue placeholder="Seleccione la zona" />
                   </SelectTrigger>
@@ -210,6 +247,23 @@ export default function EquipmentRequestForm() {
                         {zone}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {selectedType === 'Disponible fijo' && (
+              <div className="space-y-2">
+                <Label htmlFor="fixedShift" className="text-green-700">Tipo de disponibilidad</Label>
+                <Select required name="fixedShift">
+                  <SelectTrigger className="border-green-300 focus:ring-green-500">
+                    <SelectValue placeholder="Seleccione el tipo de disponibilidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Disponible Fijo AM">Disponible Fijo AM</SelectItem>
+                    <SelectItem value="Disponible Fijo PM">Disponible Fijo PM</SelectItem>
+                    <SelectItem value="Turno Cualquiera Ruta AM">Turno Cualquiera Ruta AM</SelectItem>
+                    <SelectItem value="Turno Cualquiera Ruta PM">Turno Cualquiera Ruta PM</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -247,7 +301,7 @@ export default function EquipmentRequestForm() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-lg shadow-lg"
+            className="item-center fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-lg shadow-lg"
           >
             ¡Solicitud de equipo enviada con éxito!
           </motion.div>

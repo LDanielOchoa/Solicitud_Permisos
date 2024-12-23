@@ -129,14 +129,17 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
     cursor = connection.cursor()
     try:
         cursor.execute("""
-            INSERT INTO permit_post (code, name, tipo_novedad, description, zona)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO permit_post (code, name, tipo_novedad, description, zona, comp_am, comp_pm, turno)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             current_user['code'],
             current_user['name'],
             request.type,
             request.description,
-            request.zona
+            request.zona,
+            request.codeAM,
+            request.codePM,
+            request.shift
         ))
         connection.commit()
         
