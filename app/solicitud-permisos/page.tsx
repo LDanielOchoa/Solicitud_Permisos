@@ -27,6 +27,7 @@ export default function PermitRequestForm() {
   const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
   const [newPhoneNumber, setNewPhoneNumber] = useState('')
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false) // Added state for confirmation dialog
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false); // Added state for error dialog
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -224,7 +225,7 @@ export default function PermitRequestForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
       <AnimatePresence>
         {isLoading && <LoadingOverlay />}
@@ -283,7 +284,7 @@ export default function PermitRequestForm() {
                 required 
                 onValueChange={(value) => {
                   if (value === 'descanso' && selectedDates.length >= 2) {
-                    setError('No puede seleccionar "Descanso" con 2 o más fechas. Por favor, seleccione solo una fecha para esta opción.')
+                    setIsErrorDialogOpen(false); // Added line
                   } else {
                     setNoveltyType(value)
                     setError('')
@@ -305,9 +306,9 @@ export default function PermitRequestForm() {
                   <SelectItem value="diaPM">Día P.M.</SelectItem>
                 </SelectContent>
               </Select>
-              {error && (
+              {/* {error && (
                 <p className="text-red-500 text-sm mt-1">{error}</p>
-              )}
+              )} */}
             </div>
             <div className="space-y-2">
               <Label className="text-green-700">Fechas de solicitud</Label>
@@ -450,7 +451,7 @@ export default function PermitRequestForm() {
       </Dialog>
 
       <Dialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]" hideCloseButton>
           <DialogHeader>
             <DialogTitle>Cambio de tipo de solicitud</DialogTitle>
           </DialogHeader>
@@ -463,6 +464,14 @@ export default function PermitRequestForm() {
               Aceptar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error en la selección</DialogTitle>
+          </DialogHeader>
+          <p>{error}</p>
         </DialogContent>
       </Dialog>
     </div>
