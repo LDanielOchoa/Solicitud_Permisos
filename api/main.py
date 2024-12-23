@@ -155,6 +155,31 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
     
     return {"message": "Solicitud de equipo creada exitosamente"}
 
+@app.get("/users/list")
+async def get_users_list():
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT code, name 
+            FROM users 
+            WHERE role = 'employee'
+            ORDER BY name
+        """)
+        users = cursor.fetchall()
+        return users
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener la lista de usuarios: {str(e)}"
+        )
+    finally:
+        close_connection(connection)
+
 
 @app.get("/requests")
 def get_requests():

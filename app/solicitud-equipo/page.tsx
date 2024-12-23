@@ -8,21 +8,30 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Search } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
+import { UserSelectDialog } from '../../components/user-select-dialog'
+
+interface User {
+  code: string;
+  name: string;
+}
 
 export default function EquipmentRequestForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [userData, setUserData] = useState({ code: '', name: '' })
+  const [userData, setUserData] = useState<User>({ code: '', name: '' })
   const [error, setError] = useState('')
   const [selectedType, setSelectedType] = useState('')
-  const [codeAM, setCodeAM] = useState('')
-  const [codePM, setCodePM] = useState('')
+  const [selectedAMUser, setSelectedAMUser] = useState<User | null>(null)
+  const [selectedPMUser, setSelectedPMUser] = useState<User | null>(null)
   const [zone, setZone] = useState('')
+  const [usersList, setUsersList] = useState<User[]>([])
+  const [isAMDialogOpen, setIsAMDialogOpen] = useState(false)
+  const [isPMDialogOpen, setIsPMDialogOpen] = useState(false)
   const router = useRouter()
 
   const zones = [
@@ -74,7 +83,21 @@ export default function EquipmentRequestForm() {
       }
     }
 
+    const fetchUsersList = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/users/list')
+        if (!response.ok) {
+          throw new Error('Error al obtener la lista de usuarios')
+        }
+        const data = await response.json()
+        setUsersList(data)
+      } catch (error) {
+        console.error('Error fetching users list:', error)
+      }
+    }
+
     fetchUserData()
+    fetchUsersList()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,8 +109,8 @@ export default function EquipmentRequestForm() {
       type: formElement.type.value,
       description: formElement.description.value,
       zona: (selectedType === 'Turno pareja' || selectedType === 'Tabla partida') ? zone : undefined,
-      codeAM: selectedType === 'Turno pareja' ? codeAM : undefined,
-      codePM: selectedType === 'Turno pareja' ? codePM : undefined,
+      codeAM: selectedAMUser?.code,
+      codePM: selectedPMUser?.code,
       shift: selectedType === 'Disponible fijo' ? formElement.fixedShift?.value : undefined,
     }
 
@@ -115,8 +138,8 @@ export default function EquipmentRequestForm() {
       // Reset the form
       formElement.reset()
       setSelectedType('')
-      setCodeAM('')
-      setCodePM('')
+      setSelectedAMUser(null)
+      setSelectedPMUser(null)
       setZone('')
     } catch (error) {
       console.error('Error:', error)
@@ -209,26 +232,34 @@ export default function EquipmentRequestForm() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="codeAM" className="text-green-700">Código Turno AM</Label>
-                  <Input
-                    id="codeAM"
-                    value={codeAM}
-                    onChange={(e) => setCodeAM(e.target.value)}
-                    className="border-green-300 focus:ring-green-500"
-                    placeholder="Código AM"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="codeAM"
+                      value={selectedAMUser ? `${selectedAMUser.code} - ${selectedAMUser.name}` : ''}
+                      readOnly
+                      className="border-green-300 focus:ring-green-500 pr-10"
+                      placeholder="Seleccione usuario AM"
+                      onClick={() => setIsAMDialogOpen(true)}
+                    />
+                    <Search className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground cursor-pointer" 
+                           onClick={() => setIsAMDialogOpen(true)} />
+                  </div>
                   <div className="text-sm text-green-700 mt-1">Turno AM</div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="codePM" className="text-green-700">Código Turno PM</Label>
-                  <Input
-                    id="codePM"
-                    value={codePM}
-                    onChange={(e) => setCodePM(e.target.value)}
-                    className="border-green-300 focus:ring-green-500"
-                    placeholder="Código PM"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="codePM"
+                      value={selectedPMUser ? `${selectedPMUser.code} - ${selectedPMUser.name}` : ''}
+                      readOnly
+                      className="border-green-300 focus:ring-green-500 pr-10"
+                      placeholder="Seleccione usuario PM"
+                      onClick={() => setIsPMDialogOpen(true)}
+                    />
+                    <Search className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground cursor-pointer" 
+                           onClick={() => setIsPMDialogOpen(true)} />
+                  </div>
                   <div className="text-sm text-green-700 mt-1">Turno PM</div>
                 </div>
               </div>
@@ -294,6 +325,24 @@ export default function EquipmentRequestForm() {
           </div>
         </form>
       </motion.div>
+
+      <UserSelectDialog
+        open={isAMDialogOpen}
+        onOpenChange={setIsAMDialogOpen}
+        onSelect={setSelectedAMUser}
+        users={usersList}
+        currentUser={userData}
+        title="Seleccionar Usuario AM"
+      />
+
+      <UserSelectDialog
+        open={isPMDialogOpen}
+        onOpenChange={setIsPMDialogOpen}
+        onSelect={setSelectedPMUser}
+        users={usersList}
+        currentUser={userData}
+        title="Seleccionar Usuario PM"
+      />
 
       <AnimatePresence>
         {isSuccess && (

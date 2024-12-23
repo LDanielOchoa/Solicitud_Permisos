@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, X, Upload, FileText, AlertCircle, Calendar, Clock } from 'lucide-react'
+import { Loader2, X, Upload, FileText, AlertCircle, Calendar } from 'lucide-react'
 import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
