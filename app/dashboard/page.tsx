@@ -6,15 +6,20 @@ import { FileText, Briefcase, List } from 'lucide-react'
 import Navigation from '../../components/navigation'
 import AnimatedDashboardButton from '../../components/AnimatedDashboardButton'
 import WelcomeBar from '../../components/WelcomeBar'
+import LoadingOverlay from '../../components/loading-overlay'
 
 export default function Dashboard() {
   const [userName, setUserName] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('accessToken')
-        if (!token) return
+        if (!token) {
+          setIsLoading(false)
+          return
+        }
 
         const response = await fetch('http://127.0.0.1:8000/auth/user', {
           headers: {
@@ -29,11 +34,17 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('Error fetching user data:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchUserData()
   }, [])
+
+  if (isLoading) {
+    return <LoadingOverlay />
+  }
 
   return (
     <div className="min-h-screen flex flex-col p-4 overflow-hidden">

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import LoadingOverlay from '@/components/loading-overlay'
 import Image from 'next/image'
+import { ErrorModal } from '@/components/error-modal'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
@@ -16,6 +17,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState(0)
+  const [showErrorModal, setShowErrorModal] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +48,13 @@ export default function LoginPage() {
           router.push('/dashboard')
         }
       } else {
+        setLoginAttempts(prevAttempts => {
+          const newAttempts = prevAttempts + 1
+          if (newAttempts >= 3) {
+            setShowErrorModal(true)
+          }
+          return newAttempts
+        })
         setError(data.msg || 'Credenciales inválidas')
       }
     } catch (error) {
@@ -174,6 +184,7 @@ export default function LoginPage() {
       </motion.div>
 
       {isLoading && <LoadingOverlay />}
+      <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} />
     </div>
   )
 }
