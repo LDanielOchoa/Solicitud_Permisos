@@ -157,7 +157,7 @@ export default function EquipmentRequestForm() {
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="text-3xl sm:text-4xl font-bold text-green-700 text-center mb-6 sm:mb-8"
           >
-            Solicitud de Equipo
+            Solicitud de Postulaciones
           </motion.h1>
 
           <div className="space-y-6">

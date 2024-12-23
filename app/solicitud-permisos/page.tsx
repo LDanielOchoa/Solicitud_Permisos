@@ -23,9 +23,10 @@ export default function PermitRequestForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [noveltyType, setNoveltyType] = useState('')
   const [userData, setUserData] = useState({ code: '', name: '', phone: '' })
-  const [error, setError] = useState('')
+  const [error, setError] = useState('') // Added state for error
   const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
   const [newPhoneNumber, setNewPhoneNumber] = useState('')
+  const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false) // Added state for confirmation dialog
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -135,11 +136,15 @@ export default function PermitRequestForm() {
   const handleDateSelect = (date: Date) => {
     setSelectedDates(prev => {
       const isAlreadySelected = prev.some(d => isSameDay(d, date))
-      if (isAlreadySelected) {
-        return prev.filter(d => !isSameDay(d, date))
-      } else {
-        return [...prev, date]
-      }
+      let newDates = isAlreadySelected
+        ? prev.filter(d => !isSameDay(d, date))
+        : [...prev, date]
+    
+    if (newDates.length >= 2 && noveltyType === 'descanso') {
+      setIsConfirmationDialogOpen(true)
+    }
+    
+    return newDates
     })
   }
 
@@ -209,6 +214,15 @@ export default function PermitRequestForm() {
 
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
 
+  const handleConfirmation = (confirmed: boolean) => {
+    if (confirmed) {
+      setNoveltyType('licencia')
+    } else {
+      setSelectedDates(prev => prev.slice(0, -1))
+    }
+    setIsConfirmationDialogOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
@@ -264,6 +278,38 @@ export default function PermitRequestForm() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="type" className="text-green-700">Tipo de novedad</Label>
+              <Select 
+                required 
+                onValueChange={(value) => {
+                  if (value === 'descanso' && selectedDates.length >= 2) {
+                    setError('No puede seleccionar "Descanso" con 2 o más fechas. Por favor, seleccione solo una fecha para esta opción.')
+                  } else {
+                    setNoveltyType(value)
+                    setError('')
+                  }
+                }}
+                value={noveltyType}
+              >
+                <SelectTrigger className="border-green-300 focus:ring-green-500">
+                  <SelectValue placeholder="Seleccione el tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="descanso">Descanso</SelectItem>
+                  <SelectItem value="licencia">Licencia no remunerada</SelectItem>
+                  <SelectItem value="audiencia">Audiencia o curso de tránsito</SelectItem>
+                  <SelectItem value="cita">Cita médica</SelectItem>
+                  <SelectItem value="semanaAM">Semana A.M.</SelectItem>
+                  <SelectItem value="semanaPM">Semana P.M.</SelectItem>
+                  <SelectItem value="diaAM">Día A.M.</SelectItem>
+                  <SelectItem value="diaPM">Día P.M.</SelectItem>
+                </SelectContent>
+              </Select>
+              {error && (
+                <p className="text-red-500 text-sm mt-1">{error}</p>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label className="text-green-700">Fechas de solicitud</Label>
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {weekDates.map((date, index) => (
@@ -281,24 +327,6 @@ export default function PermitRequestForm() {
                   </Button>
                 ))}
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type" className="text-green-700">Tipo de novedad</Label>
-              <Select required onValueChange={(value) => setNoveltyType(value)}>
-                <SelectTrigger className="border-green-300 focus:ring-green-500">
-                  <SelectValue placeholder="Seleccione el tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="descanso">Descanso</SelectItem>
-                  <SelectItem value="audiencia">Audiencia o curso de tránsito</SelectItem>
-                  <SelectItem value="cita">Cita médica</SelectItem>
-                  <SelectItem value="licencia">Licencia no remunerada</SelectItem>
-                  <SelectItem value="semanaAM">Semana A.M.</SelectItem>
-                  <SelectItem value="semanaPM">Semana P.M.</SelectItem>
-                  <SelectItem value="diaAM">Día A.M.</SelectItem>
-                  <SelectItem value="diaPM">Día P.M.</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             {(noveltyType === 'cita' || noveltyType === 'audiencia') && (
               <div className="space-y-2">
@@ -416,6 +444,23 @@ export default function PermitRequestForm() {
             </Button>
             <Button onClick={updatePhoneNumber} className="bg-green-500 text-white hover:bg-green-600">
               Actualizar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfirmationDialogOpen} onOpenChange={setIsConfirmationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambio de tipo de solicitud</DialogTitle>
+          </DialogHeader>
+          <p>Ha seleccionado 2 o más fechas para un descanso. Su solicitud cambiará a Licencia no remunerada. ¿Desea continuar?</p>
+          <DialogFooter>
+            <Button onClick={() => handleConfirmation(false)} variant="outline">
+              Cancelar
+            </Button>
+            <Button onClick={() => handleConfirmation(true)} className="bg-green-500 text-white hover:bg-green-600">
+              Aceptar
             </Button>
           </DialogFooter>
         </DialogContent>

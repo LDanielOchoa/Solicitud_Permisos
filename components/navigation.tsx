@@ -124,7 +124,7 @@ export default function Navigation() {
                   className="text-green-700 hover:text-green-800 hover:bg-green-100"
                 >
                   <span className="hidden sm:inline">Solicitud de </span>
-                  Equipo
+                  Postulaciones
                 </Button>
               </Link>
             </div>
