@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from auth import create_access_token, verify_password, get_current_user
 from database import create_connection, close_connection
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest, ApprovalUpdate, PermitRequest2
 from datetime import timedelta, datetime
 from typing import List
 import json
@@ -120,6 +120,62 @@ def create_permit_request(request: PermitRequest, current_user: dict = Depends(g
     
     return {"message": "Solicitud de permiso creada exitosamente"}
 
+@app.post("/new-permit-request")
+async def create_new_permit_request(request: PermitRequest2):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        # Insertar en la tabla permit_perms con los campos correctos
+        cursor.execute("""
+            INSERT INTO permit_perms 
+            (code, name, telefono, fecha, hora, tipo_novedad, description, solicitud, Aprobado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            request.code,
+            request.name,
+            request.phone,
+            ','.join(request.dates),  # Convertir lista de fechas a string
+            request.time or '',
+            request.noveltyType,
+            request.description,
+            'approved',  # Valor por defecto para solicitud
+            'pendiente'  # Valor por defecto para Aprobado
+        ))
+        connection.commit()
+        return {"message": "Solicitud de permiso creada exitosamente", "id": cursor.lastrowid}
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear la solicitud de permiso: {str(e)}")
+    finally:
+        close_connection(connection)
+ 
+@app.put("/update-approval/{request_id}")
+async def update_approval(request_id: int, approval: ApprovalUpdate):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        cursor.execute("""
+            UPDATE permit_perms
+            SET Aprobado = %s
+            WHERE id = %s
+        """, (approval.approved_by, request_id))
+        connection.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        return {"message": "Aprobación actualizada exitosamente"}
+    except Exception as e:
+        connection.rollback()
+        print(f"Error updating approval: {str(e)}")  # Add this line for debugging
+        raise HTTPException(status_code=500, detail=f"Error al actualizar la aprobación: {str(e)}")
+    finally:
+        close_connection(connection)
+ 
 @app.post("/equipment-request")
 def create_equipment_request(request: EquipmentRequest, current_user: dict = Depends(get_current_user)):
     connection = create_connection()
@@ -155,6 +211,7 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
     
     return {"message": "Solicitud de equipo creada exitosamente"}
 
+
 @app.get("/users/list")
 async def get_users_list():
     connection = create_connection()
@@ -167,7 +224,7 @@ async def get_users_list():
             SELECT code, name 
             FROM users 
             WHERE role = 'employee'
-            ORDER BY name
+            ORDER BY code
         """)
         users = cursor.fetchall()
         return users
@@ -179,7 +236,6 @@ async def get_users_list():
         )
     finally:
         close_connection(connection)
-
 
 @app.get("/requests")
 def get_requests():
@@ -194,25 +250,50 @@ def get_requests():
             SELECT id, code, name, telefono as phone, fecha as dates, 
                    hora as time, tipo_novedad as noveltyType, description,
                    files, time_created as createdAt, solicitud as status,
-                   respuesta, notifications
+                   respuesta as reason, notifications
             FROM permit_perms
         """)
         permit_requests = cursor.fetchall()
 
-        # Fetch equipment requests
+        # Fetch equipment requests with additional fields
         cursor.execute("""
             SELECT id, code, name, tipo_novedad as type,
                    description, time_created as createdAt,
-                   solicitud as status, respuesta, notifications
+                   solicitud as status, respuesta as reason, 
+                   notifications, zona, 
+                   comp_am as codeAM, 
+                   comp_pm as codePM,
+                   turno as shift
             FROM permit_post
         """)
         equipment_requests = cursor.fetchall()
         
+        # Process the requests to ensure consistent format
+        for request in permit_requests + equipment_requests:
+            # Convert any None/NULL values to empty strings or appropriate defaults
+            for key in request:
+                if request[key] is None:
+                    request[key] = ""
+            
+            # Ensure dates are properly formatted if they exist
+            if request.get('dates'):
+                if isinstance(request['dates'], str):
+                    request['dates'] = [request['dates']]
+                elif isinstance(request['dates'], (list, tuple)):
+                    request['dates'] = list(request['dates'])
+            
+            # Convert files to list if it's a string
+            if request.get('files') and isinstance(request['files'], str):
+                try:
+                    request['files'] = request['files'].split(',')
+                except:
+                    request['files'] = [request['files']]
+                    
         return permit_requests + equipment_requests
         
     finally:
         close_connection(connection)
-
+        
 @app.put("/requests/{request_id}")
 def update_request(
     request_id: int,
@@ -301,24 +382,35 @@ def get_solicitudes(current_user: dict = Depends(get_current_user)):
     
     cursor = connection.cursor(dictionary=True)
     try:
-        # Obtener solicitudes de permisos
+        # Obtener solicitudes de permisos con todos los campos relevantes
         cursor.execute("""
             SELECT 
                 id,
                 code,
                 name,
+                telefono,
+                fecha,
+                hora,
                 tipo_novedad,
                 description,
+                files,
+                time_created as createdAt,
                 solicitud as status,
                 respuesta,
+                notifications,
+                file_name,
+                file_url,
                 '' as zona,
-                time_created as createdAt
+                '' as comp_am,
+                '' as comp_pm,
+                '' as turno,
+                'permiso' as request_type
             FROM permit_perms
             WHERE code = %s AND solicitud IN ('approved', 'rejected')
         """, (current_user['code'],))
         permit_requests = cursor.fetchall()
 
-        # Obtener solicitudes de equipos
+        # Obtener solicitudes de equipos con todos los campos relevantes
         cursor.execute("""
             SELECT 
                 id,
@@ -326,22 +418,46 @@ def get_solicitudes(current_user: dict = Depends(get_current_user)):
                 name,
                 tipo_novedad,
                 description,
+                time_created as createdAt,
                 solicitud as status,
                 respuesta,
+                notifications,
                 zona,
-                time_created as createdAt
+                comp_am,
+                comp_pm,
+                turno,
+                '' as telefono,
+                '' as fecha,
+                '' as hora,
+                '' as files,
+                '' as file_name,
+                '' as file_url,
+                'equipo' as request_type
             FROM permit_post
             WHERE code = %s AND solicitud IN ('approved', 'rejected')
         """, (current_user['code'],))
         equipment_requests = cursor.fetchall()
         
-        # Combinar todas las solicitudes
+        # Combinar y procesar todas las solicitudes
         all_requests = permit_requests + equipment_requests
         
-        # Convertir datetime a string
+        # Procesar los datos para un formato consistente
         for request in all_requests:
+            # Convertir datetime a string
             if isinstance(request['createdAt'], datetime):
                 request['createdAt'] = request['createdAt'].isoformat()
+            
+            # Procesar archivos si existen
+            if request['files'] and isinstance(request['files'], str):
+                try:
+                    request['files'] = request['files'].split(',')
+                except:
+                    request['files'] = [request['files']]
+            
+            # Asegurar que todos los campos tengan un valor
+            for key in request:
+                if request[key] is None:
+                    request[key] = ""
         
         return JSONResponse(content=json.loads(json.dumps(all_requests, default=str)))
         
@@ -351,5 +467,37 @@ def get_solicitudes(current_user: dict = Depends(get_current_user)):
             status_code=500,
             detail=f"Error al obtener las solicitudes: {str(e)}"
         )
+    finally:
+        close_connection(connection)
+        
+@app.get("/user/{code}")
+def get_user_by_code(code: str):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT code, name, telefone  as phone FROM users WHERE code = %s", (code,))
+        user = cursor.fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return user
+    finally:
+        close_connection(connection)
+        
+@app.get("/permit-request/{request_id}")
+async def get_permit_request(request_id: int):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM permit_perms WHERE id = %s", (request_id,))
+        request = cursor.fetchone()
+        if not request:
+            raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        return request
     finally:
         close_connection(connection)

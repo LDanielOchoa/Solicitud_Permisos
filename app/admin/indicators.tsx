@@ -25,7 +25,7 @@ type Request = {
   [key: string]: any
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D']
+const COLORS = ['#F8B503', '#FF0015', '#12CB02', '#FF8042', '#8884D8', '#82CA9D']
 
 export default function Indicators() {
   const [activeTab, setActiveTab] = useState('permits')

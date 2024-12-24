@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, Clock, Phone, FileText, User, Code, Type, CheckCircle, XCircle, Paperclip, CalendarIcon } from 'lucide-react'
+import { X, Calendar, Clock, Phone, FileText, User, Code, Type, CheckCircle, XCircle, Paperclip, CalendarIcon, MapPin, Users } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,14 @@ type Request = {
   type: string
   status: string
   createdAt: string
+  description?: string
+  zona?: string
+  codeAM?: string
+  codePM?: string
+  shift?: string
+  dates?: string[]
+  files?: string[]
+  noveltyType?: string
   [key: string]: any
 }
 
@@ -32,6 +40,7 @@ const MotionCard = motion(Card)
 export default function RequestDetails({ request, onClose, onAction }: RequestDetailsProps) {
   const [reason, setReason] = useState('')
   const [activeSection, setActiveSection] = useState('info')
+  const isEquipmentRequest = !('noveltyType' in request)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -56,6 +65,37 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  }
+
+  const renderSections = () => {
+    const sections = ['info']
+    
+    // Only add dates and files sections for permit requests
+    if (!isEquipmentRequest) {
+      sections.push('dates', 'files')
+    }
+    
+    // Add action section for pending requests
+    if (request.status === 'pending') {
+      sections.push('action')
+    }
+
+    return (
+      <div className="flex space-x-4 mt-4">
+        {sections.map(section => (
+          <Button
+            key={section}
+            variant={activeSection === section ? "default" : "outline"}
+            onClick={() => setActiveSection(section)}
+          >
+            {section === 'info' ? 'Información' :
+             section === 'dates' ? 'Fechas' :
+             section === 'files' ? 'Archivos' :
+             'Acción'}
+          </Button>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -84,8 +124,17 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-green-600">
-                  Detalles de la Solicitud
+                <Badge 
+                  variant="outline" 
+                  className={`mb-2 ${
+                    isEquipmentRequest ? 'bg-blue-50 text-blue-700 border-blue-300' : 
+                    'bg-purple-50 text-purple-700 border-purple-300'
+                  }`}
+                >
+                  {isEquipmentRequest ? 'Solicitud de Equipo' : 'Solicitud de Permiso'}
+                </Badge>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  {request.type}
                 </h2>
                 <p className="text-gray-500">ID: {request.id}</p>
               </motion.div>
@@ -98,34 +147,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 </Button>
               </motion.div>
             </div>
-            <div className="flex space-x-4 mt-4">
-              <Button
-                variant={activeSection === 'info' ? "default" : "outline"}
-                onClick={() => setActiveSection('info')}
-              >
-                Información
-              </Button>
-              <Button
-                variant={activeSection === 'dates' ? "default" : "outline"}
-                onClick={() => setActiveSection('dates')}
-              >
-                Fechas
-              </Button>
-              <Button
-                variant={activeSection === 'files' ? "default" : "outline"}
-                onClick={() => setActiveSection('files')}
-              >
-                Archivos
-              </Button>
-              {request.status === 'pending' && (
-                <Button
-                  variant={activeSection === 'action' ? "default" : "outline"}
-                  onClick={() => setActiveSection('action')}
-                >
-                  Acción
-                </Button>
-              )}
-            </div>
+            {renderSections()}
           </div>
 
           <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
@@ -189,7 +211,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                       >
                         <Type className="w-5 h-5 text-gray-500" />
                         <span className="font-medium">Tipo:</span>
-                        <span>{request.type || request.noveltyType}</span>
+                        <span>{request.type}</span>
                       </motion.div>
                       <motion.div
                         className="flex items-center space-x-2"
@@ -209,6 +231,40 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                           {request.status}
                         </Badge>
                       </motion.div>
+                      {request.zona && (
+                        <motion.div
+                          className="flex items-center space-x-2"
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          <MapPin className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Zona:</span>
+                          <span>{request.zona}</span>
+                        </motion.div>
+                      )}
+                      {(request.codeAM || request.codePM) && (
+                        <motion.div
+                          className="flex items-center space-x-2"
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          <Users className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Códigos:</span>
+                          <span>
+                            {request.codeAM && `AM: ${request.codeAM}`}
+                            {request.codeAM && request.codePM && ', '}
+                            {request.codePM && `PM: ${request.codePM}`}
+                          </span>
+                        </motion.div>
+                      )}
+                      {request.shift && (
+                        <motion.div
+                          className="flex items-center space-x-2"
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          <Clock className="w-5 h-5 text-gray-500" />
+                          <span className="font-medium">Turno:</span>
+                          <span>{request.shift}</span>
+                        </motion.div>
+                      )}
                     </CardContent>
                   </MotionCard>
 
@@ -225,7 +281,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 </motion.div>
               )}
 
-              {activeSection === 'dates' && (
+              {!isEquipmentRequest && activeSection === 'dates' && (
                 <motion.div
                   key="dates"
                   initial="hidden"
@@ -263,7 +319,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 </motion.div>
               )}
 
-              {activeSection === 'files' && (
+              {!isEquipmentRequest && activeSection === 'files' && (
                 <motion.div
                   key="files"
                   initial="hidden"

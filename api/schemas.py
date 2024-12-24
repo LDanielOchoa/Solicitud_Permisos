@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime  
 
@@ -51,3 +51,15 @@ class SolicitudResponse(BaseModel):
     respuesta: str
     zona: str | None
     createdAt: datetime
+    
+class PermitRequest2(BaseModel):
+    code: str
+    name: str
+    phone: str
+    dates: List[str]
+    noveltyType: str
+    time: Optional[str]
+    description: str
+    
+class ApprovalUpdate(BaseModel):
+    approved_by: str = Field(..., min_length=1)

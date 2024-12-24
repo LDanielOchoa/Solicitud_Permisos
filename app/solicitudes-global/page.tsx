@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Filter } from 'lucide-react'
+import { Filter, Calendar, Clock, MapPin, Users } from 'lucide-react'
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
+import { RequestDetailsDialog } from './request-details-dialog'
 import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -13,14 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 
 interface Request {
   id: number
@@ -32,6 +27,8 @@ interface Request {
   respuesta: string
   zona?: string
   createdAt: string
+  request_type: 'permiso' | 'equipo'
+  [key: string]: any
 }
 
 export default function Solicitudes() {
@@ -39,19 +36,12 @@ export default function Solicitudes() {
   const [filteredRequests, setFilteredRequests] = useState<Request[]>([])
   const [filterPeriod, setFilterPeriod] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
   const [sortOrder, setSortOrder] = useState('desc')
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null)
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('accessToken')
-        if (!token) return
-      } catch (error) {
-        console.error('Error fetching user data:', error)
-      }
-    }
-
     const fetchRequests = async () => {
       try {
         const token = localStorage.getItem('accessToken')
@@ -75,7 +65,6 @@ export default function Solicitudes() {
     }
 
     setIsLoading(true)
-    fetchUserData()
     fetchRequests()
   }, [])
 
@@ -108,6 +97,11 @@ export default function Solicitudes() {
       filtered = filtered.filter(req => req.status === filterStatus)
     }
 
+    // Filter by type
+    if (filterType !== 'all') {
+      filtered = filtered.filter(req => req.request_type === filterType)
+    }
+
     // Sort
     filtered.sort((a, b) => {
       return sortOrder === 'desc'
@@ -116,7 +110,95 @@ export default function Solicitudes() {
     })
 
     setFilteredRequests(filtered)
-  }, [requests, filterPeriod, filterStatus, sortOrder])
+  }, [requests, filterPeriod, filterStatus, filterType, sortOrder])
+
+  const renderRequestCard = (request: Request) => {
+    const isPermitRequest = request.request_type === 'permiso'
+    const isApproved = request.status === 'approved'
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.02 }}
+        key={request.id}
+        onClick={() => setSelectedRequest(request)}
+        className="cursor-pointer"
+      >
+        <Card className={`
+          border-l-4 
+          ${isApproved ? 'border-l-green-500 bg-green-50' : 'border-l-red-500 bg-red-50'}
+        `}>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <Badge 
+                variant="outline" 
+                className={`
+                  ${isPermitRequest 
+                    ? 'bg-green-100 text-green-800 border-green-300' 
+                    : 'bg-blue-100 text-blue-800 border-blue-300'}
+                `}
+              >
+                {isPermitRequest ? 'Permiso' : 'Equipo'}
+              </Badge>
+              <Badge 
+                className={
+                  isApproved
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                }
+              >
+                {isApproved ? 'Aprobada' : 'Rechazada'}
+              </Badge>
+            </div>
+            <CardTitle className={`text-lg ${isApproved ? 'text-green-800' : 'text-red-800'}`}>
+              {request.tipo_novedad}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center text-sm text-gray-600">
+                <Clock className="mr-2 h-4 w-4" />
+                {new Date(request.createdAt).toLocaleDateString()}
+              </div>
+              
+              {isPermitRequest ? (
+                request.fecha && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Fecha: {request.fecha}
+                  </div>
+                )
+              ) : (
+                <>
+                  {request.zona && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Zona: {request.zona}
+                    </div>
+                  )}
+                  {(request.comp_am || request.comp_pm) && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Users className="mr-2 h-4 w-4" />
+                      {request.comp_am && `AM: ${request.comp_am}`}
+                      {request.comp_am && request.comp_pm && ' | '}
+                      {request.comp_pm && `PM: ${request.comp_pm}`}
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {request.description && (
+                <p className="text-sm text-gray-600 line-clamp-2 mt-2">
+                  {request.description}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col p-4 overflow-hidden">
@@ -125,18 +207,12 @@ export default function Solicitudes() {
       {isLoading && <LoadingOverlay />}
 
       <div className="container mx-auto max-w-6xl">
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white shadow-md rounded-lg p-6 mb-8"
-        >
-          <h2 className="text-2xl font-bold mb-4">Mis Solicitudes</h2>
+        <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-green-800">Mis Solicitudes</h2>
           
-          <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex flex-wrap gap-4 mb-6">
             <Select onValueChange={setFilterPeriod} defaultValue="all">
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] border-green-300">
                 <SelectValue placeholder="Filtrar por período" />
               </SelectTrigger>
               <SelectContent>
@@ -149,71 +225,56 @@ export default function Solicitudes() {
             </Select>
 
             <Select onValueChange={setFilterStatus} defaultValue="all">
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] border-green-300">
                 <SelectValue placeholder="Filtrar por estado" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="aceptada">Aceptadas</SelectItem>
-                <SelectItem value="rechazada">Rechazadas</SelectItem>
+                <SelectItem value="approved">Aprobadas</SelectItem>
+                <SelectItem value="rejected">Rechazadas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select onValueChange={setFilterType} defaultValue="all">
+              <SelectTrigger className="w-[180px] border-green-300">
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="permiso">Permisos</SelectItem>
+                <SelectItem value="equipo">Equipos</SelectItem>
               </SelectContent>
             </Select>
 
             <Button
               variant="outline"
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+              className="border-green-300 text-green-700 hover:bg-green-50"
             >
               <Filter className="mr-2 h-4 w-4" />
               {sortOrder === 'desc' ? 'Más recientes primero' : 'Más antiguas primero'}
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Tipo de Novedad</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Respuesta</TableHead>
-                  <TableHead>Zona</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRequests.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
-                      No hay solicitudes para mostrar
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>{request.code}</TableCell>
-                      <TableCell>{request.name}</TableCell>
-                      <TableCell>{request.tipo_novedad}</TableCell>
-                      <TableCell>{request.description}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          request.status === 'aceptada' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {request.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{request.respuesta || '-'}</TableCell>
-                      <TableCell>{request.zona || '-'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredRequests.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No hay solicitudes para mostrar
+              </div>
+            ) : (
+              filteredRequests.map(request => renderRequestCard(request))
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
+
+      {selectedRequest && (
+        <RequestDetailsDialog
+          request={selectedRequest}
+          open={!!selectedRequest}
+          onOpenChange={(open) => !open && setSelectedRequest(null)}
+        />
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import PermitsManagement from './permits-management'
 import Indicators from './indicators'
+import PermitRequestForm from './request-form'
 import './page.css'
 
 const MotionCard = motion(Card)
@@ -100,19 +101,9 @@ export default function AdminDashboard() {
         >
           {activeSection === 'permits' && <PermitsManagement />}
           {activeSection === 'indicators' && <Indicators />}
-          {activeSection === 'extemporaneous' && <ExtemporaneousPermits />}
+          {activeSection === 'extemporaneous' && <PermitRequestForm />}
         </motion.div>
       </AnimatePresence>
-    </div>
-  )
-}
-
-// Placeholder component for Extemporaneous Permits
-function ExtemporaneousPermits() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Permisos Extemporáneos</h2>
-      <p>Aquí se gestionarán los permisos extemporáneos.</p>
     </div>
   )
 }
