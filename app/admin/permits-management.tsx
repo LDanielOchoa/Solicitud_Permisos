@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Laptop, Filter } from 'lucide-react'
+import { FileText, Laptop, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -126,15 +126,15 @@ export default function PermitsManagement() {
   )
 
   return (
-    <div className="permits-management p-6">
-      <h1 className="text-4xl font-bold mb-8 text-center text-black">Gestión de Solicitudes</h1>
+    <div className="permits-management">
+      <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Gestión de Solicitudes</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto bg-gray-100">
-          <TabsTrigger value="permits" className="text-lg py-3">
+        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto tabs-list">
+          <TabsTrigger value="permits" className="tab-trigger">
             <FileText className="w-5 h-5 mr-2" />
             Permisos
           </TabsTrigger>
-          <TabsTrigger value="equipment" className="text-lg py-3">
+          <TabsTrigger value="equipment" className="tab-trigger">
             <Laptop className="w-5 h-5 mr-2"  />
             Equipos
           </TabsTrigger>
@@ -145,7 +145,7 @@ export default function PermitsManagement() {
         <Button
           variant="outline"
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="flex items-center"
+          className="button button-outline flex items-center"
         >
           <Filter className="w-4 h-4 mr-2" />
           {isFilterOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
@@ -153,79 +153,82 @@ export default function PermitsManagement() {
       </div>
 
       {isFilterOpen && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tipo de solicitud" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tipos</SelectItem>
-              {activeTab === 'permits' ? (
-                <>
-                  <SelectItem value="descanso">Descanso</SelectItem>
-                  <SelectItem value="audiencia">Audiencia</SelectItem>
-                  <SelectItem value="cita">Cita médica</SelectItem>
-                </>
-              ) : (
-                <>
-                  <SelectItem value="computadora">Computadora</SelectItem>
-                  <SelectItem value="telefono">Teléfono</SelectItem>
-                  <SelectItem value="herramientas">Herramientas</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
+        <div className="filter-container">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="select-trigger">
+                <SelectValue placeholder="Tipo de solicitud" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                {activeTab === 'permits' ? (
+                  <>
+                    <SelectItem value="descanso">Descanso</SelectItem>
+                    <SelectItem value="audiencia">Audiencia</SelectItem>
+                    <SelectItem value="cita">Cita médica</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="computadora">Computadora</SelectItem>
+                    <SelectItem value="telefono">Teléfono</SelectItem>
+                    <SelectItem value="herramientas">Herramientas</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
 
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger>
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
-              <SelectItem value="pending">Pendientes</SelectItem>
-              <SelectItem value="approved">Aprobados</SelectItem>
-              <SelectItem value="rejected">Rechazados</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="select-trigger">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                <SelectItem value="pending">Pendientes</SelectItem>
+                <SelectItem value="approved">Aprobados</SelectItem>
+                <SelectItem value="rejected">Rechazados</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Input 
-            placeholder="Buscar por código"
-            value={filterCode}
-            onChange={(e) => setFilterCode(e.target.value)}
-          />
+            <Input 
+              placeholder="Buscar por código"
+              value={filterCode}
+              onChange={(e) => setFilterCode(e.target.value)}
+              className="input"
+            />
 
-          <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger>
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Más recientes</SelectItem>
-              <SelectItem value="oldest">Más antiguos</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger className="select-trigger">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Más recientes</SelectItem>
+                <SelectItem value="oldest">Más antiguos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 
-      <p className="text-black mb-4">
+      <p className="text-gray-600 mb-4">
         Mostrando {currentRequests.length} de {filteredRequests.length} solicitudes
       </p>
 
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="request-grid">
           {currentRequests.map(request => (
             <div
               key={request.id}
-              className="bg-white shadow-md rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+              className="card p-6 cursor-pointer"
               onClick={() => setSelectedRequest(request)}
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{request.name}</h3>
+                  <h3 className="font-semibold text-lg text-gray-800">{request.name}</h3>
                   <p className="text-sm text-gray-500">Código: {request.code}</p>
                 </div>
-                <Badge className={`${getStatusColor(request.status)} px-2 py-1 rounded-full text-xs`}>
+                <Badge className={`status-badge ${getStatusColor(request.status)}`}>
                   {request.status === 'approved' ? 'Aprobada' :
                    request.status === 'rejected' ? 'Rechazada' :
                    'Pendiente'}
@@ -233,14 +236,14 @@ export default function PermitsManagement() {
               </div>
               <div className="space-y-2">
                 <p className="text-sm">
-                  <strong>Tipo:</strong> {request.type || request.noveltyType}
+                  <strong className="text-gray-700">Tipo:</strong> {request.type || request.noveltyType}
                 </p>
                 <p className="text-sm">
-                  <strong>Fecha:</strong> {new Date(request.createdAt).toLocaleDateString()}
+                  <strong className="text-gray-700">Fecha:</strong> {new Date(request.createdAt).toLocaleDateString()}
                 </p>
                 {request.description && (
                   <p className="text-sm line-clamp-2">
-                    <strong>Descripción:</strong> {request.description}
+                    <strong className="text-gray-700">Descripción:</strong> {request.description}
                   </p>
                 )}
               </div>
@@ -250,12 +253,14 @@ export default function PermitsManagement() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-8 space-x-2">
+        <div className="pagination">
           <Button
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
+            className="button button-outline"
           >
+            <ChevronLeft className="w-4 h-4 mr-1" />
             Anterior
           </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
@@ -263,7 +268,7 @@ export default function PermitsManagement() {
               key={page}
               variant={currentPage === page ? "default" : "outline"}
               onClick={() => setCurrentPage(page)}
-              className={currentPage === page ? "bg-primary text-primary-foreground" : ""}
+              className={currentPage === page ? "button button-primary" : "button button-outline"}
             >
               {page}
             </Button>
@@ -272,8 +277,10 @@ export default function PermitsManagement() {
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
+            className="button button-outline"
           >
             Siguiente
+            <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
       )}
