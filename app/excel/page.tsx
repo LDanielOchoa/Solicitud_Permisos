@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Download, Search } from 'lucide-react'
+import { Download, Search, FileSpreadsheet } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -32,15 +32,15 @@ interface Record {
   code: string
   name: string
   telefono: string
-  tipo: 'permiso' | 'equipo'
-  novedad: string
+  tipo: 'permiso' | 'solicitud'
+  novedad: string 
   hora: string
   fecha_inicio: string
   fecha_fin: string
   description: string
   respuesta: string
   solicitud: string
-  request_type: 'permiso' | 'equipo'
+  request_type: 'permiso' | 'solicitud'
 }
 
 export default function HistoricalRecords() {
@@ -118,6 +118,63 @@ export default function HistoricalRecords() {
     XLSX.writeFile(wb, 'registros_historicos.xlsx')
   }
 
+  const exportToExcelPermisos = async () => {
+    try {
+      const templateResponse = await fetch('/excel/Novedad_conductor_semana.xlsx');
+      if (!templateResponse.ok) {
+        throw new Error(`HTTP error! status: ${templateResponse.status}`);
+      }
+      const templateArrayBuffer = await templateResponse.arrayBuffer();
+  
+      const workbook = XLSX.read(new Uint8Array(templateArrayBuffer), { type: 'array' });
+  
+      const response = await fetch('http://localhost:8000/excel-permisos');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const permisosData = await response.json();
+  
+      const wsName = 'Novedad conductor';
+      let ws = workbook.Sheets[wsName];
+      if (!ws) {
+        throw new Error(`Worksheet "${wsName}" not found in the template`);
+      }
+  
+      let rowIndex = 2; // Comienza en la fila 3
+      permisosData.forEach((record) => {
+        // Manejo seguro de las fechas
+        let startDate = record.fecha_inicio;
+        let endDate = record.fecha_fin;
+  
+        // Solo procesar si las fechas contienen coma
+        if (record.fecha_inicio && record.fecha_inicio.includes(',')) {
+          startDate = record.fecha_inicio.split(',')[0].trim();
+        }
+  
+        if (record.fecha_fin && record.fecha_fin.includes(',')) {
+          endDate = record.fecha_fin.split(',')[1].trim();
+        }
+  
+        ws[`A${rowIndex}`] = { v: record.code };     // Columna A
+        ws[`B${rowIndex}`] = { v: startDate };       // Columna B
+        ws[`C${rowIndex}`] = { v: endDate };         // Columna C
+        ws[`D${rowIndex}`] = { v: record.novedad };  // Columna D
+        rowIndex++;
+      });
+  
+      // Actualizar el rango
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      range.e.r = rowIndex - 1;
+      ws['!ref'] = XLSX.utils.encode_range(range);
+  
+      // Guardar el archivo
+      XLSX.writeFile(workbook, 'Novedad_conductor_actualizado.xlsx');
+    } catch (error) {
+      console.error('Error exporting Excel permisos:', error);
+    }
+  };
+  
+
   const generateWeekOptions = () => {
     const options = []
     for (let i = 1; i <= 52; i++) {
@@ -169,6 +226,14 @@ export default function HistoricalRecords() {
           <Button onClick={exportToExcel} className="w-full md:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Exportar a Excel
+          </Button>
+          <Button 
+            onClick={exportToExcelPermisos} 
+            className="w-full md:w-auto"
+            variant="secondary"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel Permisos
           </Button>
         </div>
 
@@ -229,4 +294,3 @@ export default function HistoricalRecords() {
   )
 }
 
- 

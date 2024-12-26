@@ -169,7 +169,7 @@ export default function Indicators() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="permits">Permisos</TabsTrigger>
-              <TabsTrigger value="equipment">Equipos</TabsTrigger>
+              <TabsTrigger value="equipment">Postulaciones</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -259,7 +259,7 @@ export default function Indicators() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>{activeTab === 'permits' ? 'Tipos de permisos' : 'Tipos de equipos'}</CardTitle>
+                <CardTitle>{activeTab === 'permits' ? 'Tipos de permisos' : 'Tipos de postulaciones'}</CardTitle>
               </CardHeader>
               <CardContent>
                 {renderChart()}

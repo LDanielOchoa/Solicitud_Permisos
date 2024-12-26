@@ -268,7 +268,7 @@ export default function PermitRequestForm() {
     )
   }
 
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i))
 
   const handleConfirmation = (confirmed: boolean) => {
     if (confirmed) {

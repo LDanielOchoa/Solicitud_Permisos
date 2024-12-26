@@ -133,7 +133,7 @@ export default function Navigation() {
                   className="text-green-700 hover:text-green-800 hover:bg-green-100"
                 >
                   <span className="hidden sm:inline">Historial </span>
-                  Permisos
+                  Historial
                 </Button>
               </Link>
             </div>

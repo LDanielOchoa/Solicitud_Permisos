@@ -184,7 +184,7 @@ export default function PermitRequestForm() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden relative z-10 px-4 sm:px-6 md:px-8"
+        className="w-full max-w-4xl bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl overflow-hidden relative z-10 px-4 sm:px-6 md:px-8"
       >
         <form onSubmit={handleSubmit} className="p-8 space-y-4 sm:space-y-6">
           <motion.h1
@@ -281,16 +281,16 @@ export default function PermitRequestForm() {
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {weekDates.map((date, index) => (
                   <Button
-                    key={index}
-                    type="button"
-                    variant={selectedDates.some(d => isSameDay(d, date)) ? "default" : "outline"}
-                    className={`p-2 h-auto flex flex-col items-center justify-center ${
-                      selectedDates.some(d => isSameDay(d, date)) ? 'bg-green-500 text-white' : ''
-                    }`}
-                    onClick={() => handleDateSelect(date)}
+                  key={index}
+                  type="button"
+                  variant={selectedDates.some(d => isSameDay(d, date)) ? "default" : "outline"}
+                  className={`p-2 h-auto flex flex-col items-center justify-center ${
+                    selectedDates.some(d => isSameDay(d, date)) ? 'bg-green-500 text-white' : ''
+                  }`}
+                  onClick={() => handleDateSelect(date)}
                   >
-                    <span className="text-xs">{format(date, 'EEE', { locale: es })}</span>
-                    <span className="text-lg font-bold">{format(date, 'd')}</span>
+                  <span className="text-xs">{format(addDays(date, 1), 'EEE', { locale: es })}</span>
+                  <span className="text-lg font-bold">{format(addDays(date, 1), 'd')}</span>
                   </Button>
                 ))}
               </div>
@@ -317,9 +317,9 @@ export default function PermitRequestForm() {
                   <SelectValue placeholder="Seleccione quién acepta" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Mario">Mario </SelectItem>
-                  <SelectItem value="Enrique">Enrique</SelectItem>
-                  <SelectItem value="Oliver">Oliver</SelectItem>
+                  <SelectItem value="Enrique Fajardo">Enrique Fajardo</SelectItem>
+                  <SelectItem value="Mario Valle">Mario Valle </SelectItem>
+                  <SelectItem value="Oliver Barbosa">Oliver Barbosa</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -33,7 +33,7 @@ interface Request {
   respuesta: string
   zona?: string
   createdAt: string
-  request_type: 'permiso' | 'equipo'
+  request_type: 'permiso' | 'postlaciones'
   fecha?: string
   comp_am?: string
   comp_pm?: string
@@ -140,7 +140,7 @@ export default function Solicitudes() {
                 : 'bg-blue-100 text-blue-800 border-blue-300'}
             `}
           >
-            {isPermitRequest ? 'Permiso' : 'Equipo'}
+            {isPermitRequest ? 'Permiso' : 'Postulaciones'}
           </Badge>
         </TableCell>
         <TableCell>{request.tipo_novedad}</TableCell>
@@ -214,7 +214,7 @@ export default function Solicitudes() {
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="permiso">Permisos</SelectItem>
-                  <SelectItem value="equipo">Equipos</SelectItem>
+                  <SelectItem value="postlaciones">Postulaciones</SelectItem>
                 </SelectContent>
               </Select>
 

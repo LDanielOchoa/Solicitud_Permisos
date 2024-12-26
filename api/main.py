@@ -400,22 +400,23 @@ async def get_historical_records(week: Optional[int] = Query(None, description="
         # Fetch only approved records from permit_perms
         cursor.execute("""
             SELECT 
-                ANY_VALUE(id) as id,
-                code,
-                name,
-                ANY_VALUE(telefono) as telefono,
-                'permiso' as tipo,
-                tipo_novedad as novedad,
-                ANY_VALUE(hora) as hora,
-                MIN(fecha) as fecha_inicio,
-                MAX(fecha) as fecha_fin,
-                ANY_VALUE(description) as description,
-                ANY_VALUE(respuesta) as respuesta,
-                ANY_VALUE(solicitud) as solicitud,
-                'permiso' as request_type
+            ANY_VALUE(id) as id,
+            code,
+            name,
+            ANY_VALUE(telefono) as telefono,
+            'permiso' as tipo,
+            tipo_novedad as novedad,
+            ANY_VALUE(hora) as hora,
+            MIN(fecha) as fecha_inicio,
+            MAX(fecha) as fecha_fin,
+            ANY_VALUE(description) as description,
+            ANY_VALUE(respuesta) as respuesta,
+            ANY_VALUE(solicitud) as solicitud,
+            'permiso' as request_type
             FROM permit_perms
             WHERE solicitud = 'approved'
-                AND DATE(time_created) BETWEEN %s AND %s
+            AND tipo_novedad NOT IN ('descanso', 'licencia')
+            AND DATE(time_created) BETWEEN %s AND %s
             GROUP BY code, name, tipo_novedad
         """, (start_of_week.date(), end_of_week.date()))
         permit_records = cursor.fetchall()
@@ -680,6 +681,47 @@ async def get_permit_request(request_id: int):
         if not request:
             raise HTTPException(status_code=404, detail="Solicitud no encontrada")
         return request
+    finally:
+        close_connection(connection)
+
+@app.get("/excel-permisos")
+async def get_excel_permisos():
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Fetch only approved Descanso or Licencia no remunerada records
+        cursor.execute("""
+            SELECT 
+                code,
+                MIN(fecha) as fecha_inicio,
+                MAX(fecha) as fecha_fin,
+                tipo_novedad as novedad
+            FROM permit_perms
+            WHERE solicitud = 'approved'
+                AND tipo_novedad IN ('descanso', 'licencia')
+            GROUP BY code, tipo_novedad
+            ORDER BY MIN(fecha)
+        """)
+        records = cursor.fetchall()
+        
+        # Process records
+        for record in records:
+            if isinstance(record['fecha_inicio'], datetime):
+                record['fecha_inicio'] = record['fecha_inicio'].strftime('%Y-%m-%d')
+            if isinstance(record['fecha_fin'], datetime):
+                record['fecha_fin'] = record['fecha_fin'].strftime('%Y-%m-%d')
+
+        return records
+        
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener los registros de permisos: {str(e)}"
+        )
     finally:
         close_connection(connection)
 
