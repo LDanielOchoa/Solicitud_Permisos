@@ -86,3 +86,43 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.request-details-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.request-details-container {
+  background-color: white;
+}
+
+.status-badge.pending {
+  background-color: var(--warning-50);
+  color: var(--warning-700);
+  border-color: var(--warning-200);
+}
+
+.status-badge.approved {
+  background-color: var(--success-50);
+  color: var(--success-700);
+  border-color: var(--success-200);
+}
+
+.status-badge.rejected {
+  background-color: var(--error-50);
+  color: var(--error-700);
+  border-color: var(--error-200);
+}
+
+.date-badge {
+  background-color: var(--purple-50);
+  color: var(--purple-700);
+  border-color: var(--purple-200);
+}
+
+.file-badge {
+  background-color: var(--orange-50);
+  color: var(--orange-700);
+  border-color: var(--orange-200);
+}
+
+

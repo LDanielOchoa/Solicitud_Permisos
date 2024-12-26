@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Filter, Calendar, Clock, MapPin, Users } from 'lucide-react'
+import { Filter } from 'lucide-react'
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 import { RequestDetailsDialog } from './request-details-dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Select,
@@ -16,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 interface Request {
   id: number
@@ -28,6 +34,9 @@ interface Request {
   zona?: string
   createdAt: string
   request_type: 'permiso' | 'equipo'
+  fecha?: string
+  comp_am?: string
+  comp_pm?: string
   [key: string]: any
 }
 
@@ -112,162 +121,136 @@ export default function Solicitudes() {
     setFilteredRequests(filtered)
   }, [requests, filterPeriod, filterStatus, filterType, sortOrder])
 
-  const renderRequestCard = (request: Request) => {
+  const renderRequestRow = (request: Request) => {
     const isPermitRequest = request.request_type === 'permiso'
     const isApproved = request.status === 'approved'
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.02 }}
+      <TableRow 
         key={request.id}
+        className={`cursor-pointer ${isApproved ? 'bg-green-50' : 'bg-red-50'}`}
         onClick={() => setSelectedRequest(request)}
-        className="cursor-pointer"
       >
-        <Card className={`
-          border-l-4 
-          ${isApproved ? 'border-l-green-500 bg-green-50' : 'border-l-red-500 bg-red-50'}
-        `}>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <Badge 
-                variant="outline" 
-                className={`
-                  ${isPermitRequest 
-                    ? 'bg-green-100 text-green-800 border-green-300' 
-                    : 'bg-blue-100 text-blue-800 border-blue-300'}
-                `}
-              >
-                {isPermitRequest ? 'Permiso' : 'Equipo'}
-              </Badge>
-              <Badge 
-                className={
-                  isApproved
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                }
-              >
-                {isApproved ? 'Aprobada' : 'Rechazada'}
-              </Badge>
-            </div>
-            <CardTitle className={`text-lg ${isApproved ? 'text-green-800' : 'text-red-800'}`}>
-              {request.tipo_novedad}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <Clock className="mr-2 h-4 w-4" />
-                {new Date(request.createdAt).toLocaleDateString()}
-              </div>
-              
-              {isPermitRequest ? (
-                request.fecha && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Fecha: {request.fecha}
-                  </div>
-                )
-              ) : (
-                <>
-                  {request.zona && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Zona: {request.zona}
-                    </div>
-                  )}
-                  {(request.comp_am || request.comp_pm) && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Users className="mr-2 h-4 w-4" />
-                      {request.comp_am && `AM: ${request.comp_am}`}
-                      {request.comp_am && request.comp_pm && ' | '}
-                      {request.comp_pm && `PM: ${request.comp_pm}`}
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {request.description && (
-                <p className="text-sm text-gray-600 line-clamp-2 mt-2">
-                  {request.description}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+        <TableCell>
+          <Badge 
+            variant="outline" 
+            className={`
+              ${isPermitRequest 
+                ? 'bg-green-100 text-green-800 border-green-300' 
+                : 'bg-blue-100 text-blue-800 border-blue-300'}
+            `}
+          >
+            {isPermitRequest ? 'Permiso' : 'Equipo'}
+          </Badge>
+        </TableCell>
+        <TableCell>{request.tipo_novedad}</TableCell>
+        <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+        <TableCell>
+          <Badge 
+            className={
+              isApproved
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }
+          >
+            {isApproved ? 'Aprobada' : 'Rechazada'}
+          </Badge>
+        </TableCell>
+      </TableRow>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 overflow-hidden">
+    <div className="min-h-screen flex flex-col">
       <Navigation />
-      
-      {isLoading && <LoadingOverlay />}
-
-      <div className="container mx-auto max-w-6xl">
+      <main className="flex-grow pt-20 px-4 max-w-7xl mx-auto w-auto">
+        {isLoading && <LoadingOverlay />}
         <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-green-800">Mis Solicitudes</h2>
-          
-          <div className="flex flex-wrap gap-4 mb-6">
-            <Select onValueChange={setFilterPeriod} defaultValue="all">
-              <SelectTrigger className="w-[180px] border-green-300">
-                <SelectValue placeholder="Filtrar por período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="day">Último día</SelectItem>
-                <SelectItem value="week">Última semana</SelectItem>
-                <SelectItem value="month">Último mes</SelectItem>
-                <SelectItem value="year">Último año</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select onValueChange={setFilterStatus} defaultValue="all">
-              <SelectTrigger className="w-[180px] border-green-300">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="approved">Aprobadas</SelectItem>
-                <SelectItem value="rejected">Rechazadas</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select onValueChange={setFilterType} defaultValue="all">
-              <SelectTrigger className="w-[180px] border-green-300">
-                <SelectValue placeholder="Filtrar por tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="permiso">Permisos</SelectItem>
-                <SelectItem value="equipo">Equipos</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              className="border-green-300 text-green-700 hover:bg-green-50"
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              {sortOrder === 'desc' ? 'Más recientes primero' : 'Más antiguas primero'}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredRequests.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                No hay solicitudes para mostrar
+            <h2 className="text-2xl font-bold mb-4 text-green-800">Mis Solicitudes</h2>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Resumen de Solicitudes</h3>
+              <div className="flex gap-4">
+                <div className="bg-green-100 p-3 rounded-md">
+                  <p className="text-green-800 font-bold">{filteredRequests.filter(r => r.status === 'approved').length}</p>
+                  <p className="text-sm text-green-600">Aprobadas</p>
+                </div>
+                <div className="bg-red-100 p-3 rounded-md">
+                  <p className="text-red-800 font-bold">{filteredRequests.filter(r => r.status === 'rejected').length}</p>
+                  <p className="text-sm text-red-600">Rechazadas</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-md">
+                  <p className="text-blue-800 font-bold">{filteredRequests.length}</p>
+                  <p className="text-sm text-blue-600">Total</p>
+                </div>
               </div>
-            ) : (
-              filteredRequests.map(request => renderRequestCard(request))
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
+            <div className="flex flex-wrap gap-4 mb-6">
+              <Select onValueChange={setFilterPeriod} defaultValue="all">
+                <SelectTrigger className="w-[180px] border-green-300">
+                  <SelectValue placeholder="Filtrar por período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="week">Última semana</SelectItem>
+                  <SelectItem value="month">Último mes</SelectItem>
+                </SelectContent>
+              </Select>
 
+              <Select onValueChange={setFilterStatus} defaultValue="all">
+                <SelectTrigger className="w-[180px] border-green-300">
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="approved">Aprobadas</SelectItem>
+                  <SelectItem value="rejected">Rechazadas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select onValueChange={setFilterType} defaultValue="all">
+                <SelectTrigger className="w-[180px] border-green-300">
+                  <SelectValue placeholder="Filtrar por tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="permiso">Permisos</SelectItem>
+                  <SelectItem value="equipo">Equipos</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                className="border-green-300 text-green-700 hover:bg-green-50"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                {sortOrder === 'desc' ? 'Más recientes primero' : 'Más antiguas primero'}
+              </Button>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Novedad</TableHead>
+                  <TableHead>Fecha de Creación</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                      No hay solicitudes para mostrar
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRequests.map(request => renderRequestRow(request))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+      </main>
       {selectedRequest && (
         <RequestDetailsDialog
           request={selectedRequest}

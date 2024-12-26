@@ -317,7 +317,7 @@ export default function PermitRequestForm() {
                   <SelectValue placeholder="Seleccione quién acepta" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Mario">Mario</SelectItem>
+                  <SelectItem value="Mario">Mario </SelectItem>
                   <SelectItem value="Enrique">Enrique</SelectItem>
                   <SelectItem value="Oliver">Oliver</SelectItem>
                 </SelectContent>

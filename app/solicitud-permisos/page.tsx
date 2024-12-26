@@ -13,8 +13,8 @@ import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import Navigation from '../../components/navigation'
-import LoadingOverlay from '../../components/loading-overlay'
+import Navigation from '@/components/navigation'
+import LoadingOverlay from '@/components/loading-overlay'
 
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
@@ -30,6 +30,8 @@ export default function PermitRequestForm() {
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
+  const [fileError, setFileError] = useState('') // Added state for file errors
+  const [showInvalidFileBackground, setShowInvalidFileBackground] = useState(false); // Added state for invalid file background
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -80,7 +82,7 @@ export default function PermitRequestForm() {
 
   const updatePhoneNumber = async () => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       const token = localStorage.getItem('accessToken')
       if (!token) {
         throw new Error('No se encontró el token de acceso')
@@ -111,6 +113,136 @@ export default function PermitRequestForm() {
     }
   }
 
+  const handleDateSelect = (date: Date) => {
+    setSelectedDates(prev => {
+      const isAlreadySelected = prev.some(d => isSameDay(d, date))
+      let newDates
+
+      if (noveltyType === 'audiencia' || noveltyType === 'cita') {
+        newDates = isAlreadySelected ? [] : [date]
+      } else {
+        newDates = isAlreadySelected
+          ? prev.filter(d => !isSameDay(d, date))
+          : [...prev, date]
+        
+        if (newDates.length >= 2 && noveltyType === 'descanso') {
+          setIsConfirmationDialogOpen(true)
+        }
+
+        if (noveltyType === 'licencia' && newDates.length === 3 && !hasShownLicenseNotification) {
+          setIsLicenseNotificationOpen(true)
+          setHasShownLicenseNotification(true)
+        }
+      }
+    
+      return newDates
+    })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files)
+      const validFiles = newFiles.filter(file => {
+        const isValidType = ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)
+        const isValidSize = file.size <= 5 * 1024 * 1024 // 5MB limit
+        return isValidType && isValidSize
+      })
+
+      setSelectedFiles(prevFiles => {
+        const updatedFiles = [...prevFiles, ...validFiles]
+        return updatedFiles.slice(0, 5) // Limit to 5 files
+      })
+
+      // Add visual feedback for invalid files
+      if (validFiles.length !== newFiles.length) {
+        setShowInvalidFileBackground(true);
+        setTimeout(() => setShowInvalidFileBackground(false), 3000);
+
+        const fileInput = e.target as HTMLInputElement
+        fileInput.classList.add('invalid-file')
+        setTimeout(() => fileInput.classList.remove('invalid-file'), 3000)
+
+        // Show error message for files exceeding size limit or invalid format
+        const invalidFiles = newFiles.filter(file => 
+          file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)
+        )
+        if (invalidFiles.length > 0) {
+          setFileError(`Los siguientes archivos no son válidos (formato incorrecto o tamaño superior a 5MB): ${invalidFiles.map(f => f.name).join(', ')}`)
+        }
+      } else {
+        setFileError('') // Clear error if all files are valid
+      }
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const formData = new FormData()
+    
+      // Add basic form data
+      formData.append('code', userData.code)
+      formData.append('name', userData.name)
+      formData.append('phone', userData.phone)
+      formData.append('dates', JSON.stringify(selectedDates.map(date => format(date, 'yyyy-MM-dd'))))
+      formData.append('noveltyType', noveltyType)
+      formData.append('time', (e.target as HTMLFormElement).time?.value || '')
+      formData.append('description', (e.target as HTMLFormElement).description.value)
+
+      // Append files to FormData
+      selectedFiles.forEach(file => {
+        formData.append('files', file)
+      })
+
+      // Log FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1])
+      }
+
+      const token = localStorage.getItem('accessToken')
+      if (!token) {
+        throw new Error('No se encontró el token de acceso')
+      }
+
+      const response = await fetch('http://127.0.0.1:8000/permit-request', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Error al enviar la solicitud')
+      }
+
+      const responseData = await response.json()
+      console.log('Files saved:', responseData.files)
+
+      setIsSuccess(true)
+      // Reset form
+      e.target.reset()
+      setSelectedDates([])
+      setSelectedFiles([])
+      setNoveltyType('')
+      setHasShownLicenseNotification(false)
+      setFileError('') // Clear file error after successful submission
+    } catch (error) {
+      console.error('Error:', error)
+      setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setIsSuccess(false), 3000)
+    }
+  }
+
   if (isLoading) {
     return <LoadingOverlay />
   }
@@ -136,97 +268,6 @@ export default function PermitRequestForm() {
     )
   }
 
-  const handleDateSelect = (date: Date) => {
-    setSelectedDates(prev => {
-      const isAlreadySelected = prev.some(d => isSameDay(d, date));
-      let newDates;
-    
-      if (noveltyType === 'audiencia' || noveltyType === 'cita') {
-        newDates = isAlreadySelected ? [] : [date];
-      } else {
-        newDates = isAlreadySelected
-          ? prev.filter(d => !isSameDay(d, date))
-          : [...prev, date];
-        
-        if (newDates.length >= 2 && noveltyType === 'descanso') {
-          setIsConfirmationDialogOpen(true);
-        }
-
-        if (noveltyType === 'licencia' && newDates.length === 3 && !hasShownLicenseNotification) {
-          setIsLicenseNotificationOpen(true);
-          setHasShownLicenseNotification(true);
-        }
-      }
-    
-      return newDates;
-    });
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files)
-      setSelectedFiles(prevFiles => {
-        const updatedFiles = [...prevFiles, ...newFiles]
-        return updatedFiles.slice(0, 5) // Limit to 5 files
-      })
-    }
-  }
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    const formData = {
-      code: userData.code,
-      name: userData.name,
-      phone: userData.phone,
-      dates: selectedDates.map(date => format(date, 'yyyy-MM-dd')),
-      noveltyType,
-      time: (e.target as HTMLFormElement).time?.value || '',
-      description: (e.target as HTMLFormElement).description.value,
-      files: selectedFiles.map(file => file.name),
-    }
-
-    try {
-      const token = localStorage.getItem('accessToken')
-      if (!token) {
-        throw new Error('No se encontró el token de acceso')
-      }
-
-      const response = await fetch('http://127.0.0.1:8000/permit-request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al enviar la solicitud')
-      }
-
-      setIsSuccess(true)
-      // Resetear el formulario
-      e.target.reset()
-      setSelectedDates([])
-      setSelectedFiles([])
-      setNoveltyType('')
-      setHasShownLicenseNotification(false)
-    } catch (error) {
-      console.error('Error:', error)
-      setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
-    } finally {
-      setIsLoading(false)
-      // Resetear el éxito después de 3 segundos
-      setTimeout(() => setIsSuccess(false), 3000)
-    }
-  }
-
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
 
   const handleConfirmation = (confirmed: boolean) => {
@@ -239,7 +280,7 @@ export default function PermitRequestForm() {
   }
 
   return (
-    <div className="min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className={`min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden ${showInvalidFileBackground ? 'bg-red-100' : ''}`}>
       <Navigation />
       <AnimatePresence>
         {isLoading && <LoadingOverlay />}
@@ -298,7 +339,7 @@ export default function PermitRequestForm() {
                 required 
                 onValueChange={(value) => {
                   if (value === 'descanso' && selectedDates.length >= 2) {
-                    setIsErrorDialogOpen(false);
+                    setIsErrorDialogOpen(false)
                   } else {
                     setNoveltyType(value)
                     setError('')
@@ -358,6 +399,7 @@ export default function PermitRequestForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="file" className="text-green-700">Adjuntar archivos (Máximo 5)</Label>
+              <p className="text-xs text-green-600">Archivos permitidos: PDF, PNG, JPG, JPEG (máx. 5MB cada uno)</p>
               <div className="flex items-center justify-center w-full">
                 <label htmlFor="file" className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-green-300 border-dashed rounded-lg cursor-pointer bg-green-50 hover:bg-green-100 transition-colors duration-300">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -371,10 +413,15 @@ export default function PermitRequestForm() {
                     accept=".pdf,.png,.jpg,.jpeg"
                     onChange={handleFileChange}
                     multiple
-                    className="hidden"
+                    className="hidden invalid-file:border-red-500 invalid-file:bg-red-100"
                   />
                 </label>
               </div>
+              {fileError && ( // Added to display fileError
+                <p className="text-sm text-red-600 mt-2">
+                  {fileError}
+                </p>
+              )}
               {selectedFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {selectedFiles.map((file, index) => (
@@ -478,6 +525,7 @@ export default function PermitRequestForm() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -486,6 +534,7 @@ export default function PermitRequestForm() {
           <p>{error}</p>
         </DialogContent>
       </Dialog>
+
       <Dialog open={isLicenseNotificationOpen} onOpenChange={setIsLicenseNotificationOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

@@ -21,7 +21,7 @@ export default function Navigation() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const pathname = usePathname()
 
-  const isFormPage = pathname === '/solicitud-permisos' || pathname === '/solicitud-equipo'
+  const isFormPage = pathname === '/solicitud-permisos' || pathname === '/solicitud-equipo' || pathname === '/solicitudes-global'
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -127,6 +127,15 @@ export default function Navigation() {
                   Postulaciones
                 </Button>
               </Link>
+              <Link href="/solicitudes-global" passHref>
+                <Button 
+                  variant="ghost" 
+                  className="text-green-700 hover:text-green-800 hover:bg-green-100"
+                >
+                  <span className="hidden sm:inline">Historial </span>
+                  Permisos
+                </Button>
+              </Link>
             </div>
             <div className="flex items-center space-x-4">
               <Button
@@ -179,4 +188,3 @@ export default function Navigation() {
     </motion.nav>
   )
 }
-

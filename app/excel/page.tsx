@@ -1,0 +1,232 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Download, Search } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import * as XLSX from 'xlsx'
+
+interface Record {
+  id: number
+  code: string
+  name: string
+  telefono: string
+  tipo: 'permiso' | 'equipo'
+  novedad: string
+  hora: string
+  fecha_inicio: string
+  fecha_fin: string
+  description: string
+  respuesta: string
+  solicitud: string
+  request_type: 'permiso' | 'equipo'
+}
+
+export default function HistoricalRecords() {
+  const [records, setRecords] = useState<Record[]>([])
+  const [filteredRecords, setFilteredRecords] = useState<Record[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [weekFilter, setWeekFilter] = useState<string>(getCurrentWeek())
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchRecords()
+  }, [weekFilter])
+
+  function getCurrentWeek() {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), 0, 1)
+    const week = Math.ceil((((now.getTime() - start.getTime()) / 86400000) + start.getDay() + 1) / 7)
+    return week.toString()
+  }
+
+  const fetchRecords = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/historical-records?week=${weekFilter}`)
+      const data = await response.json()
+      setRecords(data)
+      setFilteredRecords(data)
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching records:', error)
+      setLoading(false)
+    }
+  }
+
+  const filterRecords = () => {
+    let filtered = [...records]
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(record =>
+        record.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(record => record.tipo === filterType)
+    }
+
+    setFilteredRecords(filtered)
+  }
+
+  useEffect(() => {
+    filterRecords()
+  }, [searchTerm, filterType, records])
+
+  const exportToExcel = () => {
+    const exportData = filteredRecords.map(record => ({
+      'Código': record.code,
+      'Nombre': record.name,
+      'Teléfono': record.telefono,
+      'Tipo': record.tipo,
+      'Novedad': record.novedad,
+      'Hora': record.hora,
+      'Fecha Inicio': record.fecha_inicio,
+      'Fecha Fin': record.fecha_fin,
+      'Descripción': record.description,
+      'Respuesta': record.respuesta
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(exportData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Registros')
+    XLSX.writeFile(wb, 'registros_historicos.xlsx')
+  }
+
+  const generateWeekOptions = () => {
+    const options = []
+    for (let i = 1; i <= 52; i++) {
+      options.push(
+        <SelectItem key={i} value={i.toString()}>
+          Semana {i}
+        </SelectItem>
+      )
+    }
+    return options
+  }
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Registro Histórico</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por código o nombre..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tipos</SelectItem>
+              <SelectItem value="permiso">Permiso</SelectItem>
+              <SelectItem value="equipo">Equipo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por semana" />
+            </SelectTrigger>
+            <SelectContent>
+              {generateWeekOptions()}
+            </SelectContent>
+          </Select>
+          <Button onClick={exportToExcel} className="w-full md:w-auto">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar a Excel
+          </Button>
+        </div>
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Código</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Novedad</TableHead>
+                <TableHead>Fecha Inicio</TableHead>
+                <TableHead>Fecha Fin</TableHead>
+                <TableHead>Hora</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Respuesta</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center">
+                    Cargando registros...
+                  </TableCell>
+                </TableRow>
+              ) : filteredRecords.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center">
+                    No se encontraron registros para la semana {weekFilter}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRecords.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell>{record.code}</TableCell>
+                    <TableCell>{record.name}</TableCell>
+                    <TableCell>{record.telefono}</TableCell>
+                    <TableCell>{record.tipo}</TableCell>
+                    <TableCell>{record.novedad}</TableCell>
+                    <TableCell>{record.fecha_inicio}</TableCell>
+                    <TableCell>{record.fecha_fin}</TableCell>
+                    <TableCell>{record.hora}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {record.description}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {record.respuesta}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+ 

@@ -1,15 +1,31 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from auth import create_access_token, verify_password, get_current_user
-from database import create_connection, close_connection
 from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest, ApprovalUpdate, PermitRequest2
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Query
+from auth import create_access_token, verify_password, get_current_user
+from fastapi.responses import JSONResponse, FileResponse
+from database import create_connection, close_connection
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from datetime import timedelta, datetime
-from typing import List
+from typing import List, Optional
+import mimetypes
+import aiofiles
+import shutil
+import uuid
 import json
-
+import os
 
 app = FastAPI()
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+# Add supported MIME types
+mimetypes.add_type('application/pdf', '.pdf')
+mimetypes.add_type('image/jpeg', '.jpg')
+mimetypes.add_type('image/jpeg', '.jpeg')
+mimetypes.add_type('image/png', '.png')
 
 # Configurar CORS para permitir solicitudes del frontend
 app.add_middleware(
@@ -73,42 +89,106 @@ def update_phone(request: UpdatePhoneRequest, current_user: dict = Depends(get_c
     return {"message": "Número de teléfono actualizado exitosamente"}
 
 @app.post("/permit-request")
-def create_permit_request(request: PermitRequest, current_user: dict = Depends(get_current_user)):
+async def create_permit_request(
+    code: str = Form(...),
+    name: str = Form(...),
+    phone: str = Form(...),
+    dates: str = Form(...),
+    noveltyType: str = Form(...),
+    time: str = Form(None),
+    description: str = Form(...),
+    files: List[UploadFile] = File([]),
+    current_user: dict = Depends(get_current_user)
+):
     connection = create_connection()
     if connection is None:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
-    
+
     cursor = connection.cursor()
+    saved_files = []
+
     try:
-        # Print the values for debugging
-        print("Inserting values:", (
-            current_user['code'],
-            current_user['name'],
-            request.phone,
-            ','.join(request.dates),
-            request.time or '',
-            request.noveltyType,
-            request.description,
-            ','.join(request.files) if request.files else ''
-        ))
+        # Handle file uploads first
+        if files:
+            for file in files:
+                # Validate file type
+                content_type = file.content_type
+                if content_type not in ['image/jpeg', 'image/png', 'application/pdf']:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Tipo de archivo no permitido: {content_type}"
+                    )
+                
+                # Use original filename
+                original_filename = file.filename
+                file_path = os.path.join(UPLOAD_DIR, original_filename)
+                
+                # Handle filename conflicts
+                counter = 1
+                while os.path.exists(file_path):
+                    name, ext = os.path.splitext(original_filename)
+                    new_filename = f"{name}_{counter}{ext}"
+                    file_path = os.path.join(UPLOAD_DIR, new_filename)
+                    counter += 1
+                
+                # Save file
+                try:
+                    async with aiofiles.open(file_path, 'wb') as buffer:
+                        content = await file.read()
+                        await buffer.write(content)
+                    
+                    saved_files.append({
+                        "fileName": os.path.basename(file_path),
+                        "fileUrl": os.path.basename(file_path)
+                    })
+                except Exception as e:
+                    print(f"Error saving file: {str(e)}")
+                    # Clean up any files that were saved before the error
+                    for saved_file in saved_files:
+                        try:
+                            os.remove(os.path.join(UPLOAD_DIR, saved_file['fileUrl']))
+                        except:
+                            pass
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Error al guardar el archivo"
+                    )
+
+        # Parse dates from JSON string
+        dates_list = json.loads(dates)
         
+        # Insert into database
         cursor.execute("""
             INSERT INTO permit_perms 
-            (code, name, telefono, fecha, hora, tipo_novedad, description, files)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            (code, name, telefono, fecha, hora, tipo_novedad, description, files, file_name, file_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             current_user['code'],
             current_user['name'],
-            request.phone,
-            ','.join(request.dates),
-            request.time or '',
-            request.noveltyType,
-            request.description,
-            ','.join(request.files) if request.files else ''
+            phone,
+            ','.join(dates_list),
+            time or '',
+            noveltyType,
+            description,
+            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
+            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
+            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None
         ))
         connection.commit()
         
+        return {
+            "message": "Solicitud de permiso creada exitosamente",
+            "files": saved_files
+        }
+        
     except Exception as e:
+        # Delete uploaded files if database operation fails
+        for file in saved_files:
+            try:
+                os.remove(os.path.join(UPLOAD_DIR, file['fileUrl']))
+            except:
+                pass
+        
         connection.rollback()
         print("Database error:", str(e))
         raise HTTPException(
@@ -117,8 +197,14 @@ def create_permit_request(request: PermitRequest, current_user: dict = Depends(g
         )
     finally:
         close_connection(connection)
+
+@app.get("/files/{filename}")
+async def get_file(filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
     
-    return {"message": "Solicitud de permiso creada exitosamente"}
+    return FileResponse(file_path)
 
 @app.post("/new-permit-request")
 async def create_new_permit_request(request: PermitRequest2):
@@ -171,7 +257,7 @@ async def update_approval(request_id: int, approval: ApprovalUpdate):
         return {"message": "Aprobación actualizada exitosamente"}
     except Exception as e:
         connection.rollback()
-        print(f"Error updating approval: {str(e)}")  # Add this line for debugging
+        print(f"Error updating approval: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al actualizar la aprobación: {str(e)}")
     finally:
         close_connection(connection)
@@ -210,7 +296,6 @@ def create_equipment_request(request: EquipmentRequest, current_user: dict = Dep
         close_connection(connection)
     
     return {"message": "Solicitud de equipo creada exitosamente"}
-
 
 @app.get("/users/list")
 async def get_users_list():
@@ -293,7 +378,105 @@ def get_requests():
         
     finally:
         close_connection(connection)
+
+@app.get("/historical-records")
+async def get_historical_records(week: Optional[int] = Query(None, description="Week number to filter by")):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        current_date = datetime.now()
+        start_of_week = current_date - timedelta(days=current_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
+        if week is not None:
+            # If a specific week is requested, calculate its start and end dates
+            year = current_date.year
+            start_of_week = datetime.strptime(f'{year}-W{week}-1', "%Y-W%W-%w")
+            end_of_week = start_of_week + timedelta(days=6)
+
+        # Fetch only approved records from permit_perms
+        cursor.execute("""
+            SELECT 
+                ANY_VALUE(id) as id,
+                code,
+                name,
+                ANY_VALUE(telefono) as telefono,
+                'permiso' as tipo,
+                tipo_novedad as novedad,
+                ANY_VALUE(hora) as hora,
+                MIN(fecha) as fecha_inicio,
+                MAX(fecha) as fecha_fin,
+                ANY_VALUE(description) as description,
+                ANY_VALUE(respuesta) as respuesta,
+                ANY_VALUE(solicitud) as solicitud,
+                'permiso' as request_type
+            FROM permit_perms
+            WHERE solicitud = 'approved'
+                AND DATE(time_created) BETWEEN %s AND %s
+            GROUP BY code, name, tipo_novedad
+        """, (start_of_week.date(), end_of_week.date()))
+        permit_records = cursor.fetchall()
+
+        # Fetch only approved records from permit_post
+        cursor.execute("""
+            SELECT 
+                ANY_VALUE(id) as id,
+                code,
+                name,
+                '' as telefono,
+                'equipo' as tipo,
+                tipo_novedad as novedad,
+                '' as hora,
+                MIN(time_created) as fecha_inicio,
+                MAX(time_created) as fecha_fin,
+                ANY_VALUE(description) as description,
+                ANY_VALUE(respuesta) as respuesta,
+                ANY_VALUE(solicitud) as solicitud,
+                'equipo' as request_type
+            FROM permit_post
+            WHERE solicitud = 'approved'
+                AND DATE(time_created) BETWEEN %s AND %s
+            GROUP BY code, name, tipo_novedad
+        """, (start_of_week.date(), end_of_week.date()))
+        equipment_records = cursor.fetchall()
+
+        # Combine and process all records
+        all_records = permit_records + equipment_records
         
+        # Process the data for consistent format
+        for record in all_records:
+            # Convert datetime to string for both start and end dates
+            if isinstance(record['fecha_inicio'], datetime):
+                record['fecha_inicio'] = record['fecha_inicio'].strftime('%Y-%m-%d')
+            if isinstance(record['fecha_fin'], datetime):
+                record['fecha_fin'] = record['fecha_fin'].strftime('%Y-%m-%d')
+    
+            # Separate start and end dates
+            fechas = record['fecha_inicio'].split(',')
+            record['fecha_inicio'] = fechas[0] if fechas else ''
+    
+            fechas = record['fecha_fin'].split(',')
+            record['fecha_fin'] = fechas[-1] if fechas else ''
+    
+            # Ensure all fields have a value
+            for key in record:
+                if record[key] is None:
+                    record[key] = ""
+
+        return all_records
+        
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener los registros históricos: {str(e)}"
+        )
+    finally:
+        close_connection(connection)
+
 @app.put("/requests/{request_id}")
 def update_request(
     request_id: int,
@@ -332,8 +515,6 @@ def update_request(
         
     finally:
         close_connection(connection)
-        
-        
 
 @app.put("/requests/{request_id}/notifications")
 def update_notification_status(
@@ -432,7 +613,7 @@ def get_solicitudes(current_user: dict = Depends(get_current_user)):
                 '' as files,
                 '' as file_name,
                 '' as file_url,
-                'equipo' as request_type
+                'solicitud' as request_type
             FROM permit_post
             WHERE code = %s AND solicitud IN ('approved', 'rejected')
         """, (current_user['code'],))
@@ -478,7 +659,7 @@ def get_user_by_code(code: str):
     
     cursor = connection.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT code, name, telefone  as phone FROM users WHERE code = %s", (code,))
+        cursor.execute("SELECT code, name, telefone as phone FROM users WHERE code = %s", (code,))
         user = cursor.fetchone()
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -501,3 +682,7 @@ async def get_permit_request(request_id: int):
         return request
     finally:
         close_connection(connection)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
