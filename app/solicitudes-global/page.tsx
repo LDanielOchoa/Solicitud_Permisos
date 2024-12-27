@@ -29,7 +29,7 @@ interface Request {
   name: string
   tipo_novedad: string
   description: string
-  status: string
+  status: 'approved' | 'rejected'
   respuesta: string
   zona?: string
   createdAt: string
@@ -65,8 +65,12 @@ export default function Solicitudes() {
 
         if (response.ok) {
           const data = await response.json()
-          setRequests(data)
-          setFilteredRequests(data)
+          const typedData = data.map((req: any) => ({
+            ...req,
+            status: req.status as 'approved' | 'rejected'
+          }))
+          setRequests(typedData)
+          setFilteredRequests(typedData)
         }
       } finally {
         setIsLoading(false)
