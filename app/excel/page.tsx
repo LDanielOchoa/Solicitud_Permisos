@@ -61,7 +61,7 @@ export default function HistoricalRecords() {
 
   const fetchRecords = useCallback(async () => {
     try {
-      const response = await fetch(`http://localhost:8000/historical-records?week=${weekFilter}`)
+      const response = await fetch(`/historical-records?week=${weekFilter}`)
       const data = await response.json()
       setRecords(data)
       setFilteredRecords(data)
@@ -129,7 +129,7 @@ export default function HistoricalRecords() {
   
       const workbook = XLSX.read(new Uint8Array(templateArrayBuffer), { type: 'array' });
   
-      const response = await fetch('http://localhost:8000/excel-permisos');
+      const response = await fetch('http://solicitud-permisos.onrender.com/excel-permisos');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

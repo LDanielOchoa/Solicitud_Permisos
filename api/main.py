@@ -16,18 +16,15 @@ import os
 
 app = FastAPI()
 
-# Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Add supported MIME types
 mimetypes.add_type('application/pdf', '.pdf')
 mimetypes.add_type('image/jpeg', '.jpg')
 mimetypes.add_type('image/jpeg', '.jpeg')
 mimetypes.add_type('image/png', '.png')
 
-# Configurar CORS para permitir solicitudes del frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
