@@ -179,40 +179,46 @@ export default function PermitRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    const formData = {
+  
+    const formData = new FormData(e.target as HTMLFormElement)
+    const time = formData.get('time') as string | null
+    const description = formData.get('description') as string | null
+  
+    const data = {
       code: userData.code,
       name: userData.name,
       phone: userData.phone,
       dates: selectedDates.map(date => format(date, 'yyyy-MM-dd')),
       noveltyType,
-      time: (e.target as HTMLFormElement).time?.value || '',
-      description: (e.target as HTMLFormElement).description.value,
+      time: time || '',
+      description: description || '',
       files: selectedFiles.map(file => file.name),
     }
-
+  
     try {
       const token = localStorage.getItem('accessToken')
       if (!token) {
         throw new Error('No se encontró el token de acceso')
       }
-
+  
       const response = await fetch('http://127.0.0.1:8000/permit-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       })
-
+  
       if (!response.ok) {
         throw new Error('Error al enviar la solicitud')
       }
-
+  
       setIsSuccess(true)
       // Resetear el formulario
-      e.target.reset()
+      const form = e.target as HTMLFormElement
+      form.reset()  // Aquí verificamos que `e.target` es un formulario
+  
       setSelectedDates([])
       setSelectedFiles([])
       setNoveltyType('')
@@ -226,6 +232,7 @@ export default function PermitRequestForm() {
       setTimeout(() => setIsSuccess(false), 3000)
     }
   }
+  
 
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
 
