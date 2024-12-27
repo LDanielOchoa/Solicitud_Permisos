@@ -1,4 +1,4 @@
-"use client"
+'use client'  // Marca este archivo como un Client Component
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,11 +8,14 @@ import PermitsManagement from './permits-management'
 import Indicators from './indicators'
 import PermitRequestForm from './request-form'
 import HistoricalRecords from '../excel/page'
+import { useRouter } from 'next/navigation'  // Cambia esta línea
 
 export default function AdminDashboard() {
-  type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history'
+  type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history' | 'exit'
   const MotionCard = motion(Card) 
   const [activeSection, setActiveSection] = useState<SectionType>('permits')
+
+  const router = useRouter()  // useRouter de 'next/navigation'
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -24,7 +27,7 @@ export default function AdminDashboard() {
       title: "Gestión de Permisos",
       icon: FileText,
       value: "Administrar",
-      description: "Gestione solicitudes de permisos y equipos",
+      description: "Gestione solicitudes de permisos y postulaciones ",
       color: "text-green-600",
       section: 'permits' as SectionType
     },
@@ -52,7 +55,23 @@ export default function AdminDashboard() {
       color: "text-blue-600",
       section: 'history' as SectionType
     },
+    {
+      title: "Salir",
+      icon: AlertTriangle,
+      value: "Cerrar Sesión",
+      description: "Regresar a la página de inicio",
+      color: "text-red-600",
+      section: 'exit' as SectionType
+    },
   ]
+
+  const handleSectionChange = (section: SectionType) => {
+    if (section === 'exit') {
+      router.push('/') // Redirigir a la página de inicio
+    } else {
+      setActiveSection(section)
+    }
+  }
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -78,14 +97,14 @@ export default function AdminDashboard() {
             },
           },
         }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8"
       >
         {stats.map((stat) => (
           <MotionCard
             key={stat.title}
             variants={cardVariants}
             className="cursor-pointer transition-colors hover:bg-accent"
-            onClick={() => setActiveSection(stat.section)}
+            onClick={() => handleSectionChange(stat.section)} // Cambiar a la función de redirección
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium">{stat.title}</CardTitle>
@@ -117,4 +136,3 @@ export default function AdminDashboard() {
     </div>
   )
 }
-
