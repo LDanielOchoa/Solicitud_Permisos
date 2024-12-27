@@ -257,7 +257,10 @@ export default function Indicators() {
                 </div>
               )}
 
-              <Select value={activeChart} onValueChange={setActiveChart}>
+                <Select
+                  value={activeChart}
+                  onValueChange={(value) => setActiveChart(value as 'pie' | 'bar' | 'line')}
+                >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Tipo de gráfico" />
                 </SelectTrigger>
