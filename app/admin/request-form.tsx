@@ -47,7 +47,6 @@ export default function PermitRequestForm() {
       setUsers(data)
     } catch (error) {
       console.error('Error fetching users:', error)
-      // setError('No se pudo cargar la lista de usuarios.')
     }
   }
 
@@ -63,7 +62,6 @@ export default function PermitRequestForm() {
       setUserData({ code: data.code, name: data.name, phone: data.phone || '' })
     } catch (error) {
       console.error('Error fetching user data:', error)
-      // setError('No se pudieron cargar los datos del usuario.')
     } finally {
       setIsLoading(false)
     }
@@ -71,31 +69,31 @@ export default function PermitRequestForm() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDates(prev => {
-      const isAlreadySelected = prev.some(d => isSameDay(d, date));
-      let newDates;
-    
+      const isAlreadySelected = prev.some(d => isSameDay(d, date))
+      let newDates
+
       if (noveltyType === 'audiencia' || noveltyType === 'cita') {
-        newDates = isAlreadySelected ? [] : [date];
+        newDates = isAlreadySelected ? [] : [date]
       } else {
         newDates = isAlreadySelected
           ? prev.filter(d => !isSameDay(d, date))
-          : [...prev, date];
-        
+          : [...prev, date]
+
         if (newDates.length >= 2 && noveltyType === 'descanso') {
-          setIsConfirmationDialogOpen(true);
+          setIsConfirmationDialogOpen(true)
         }
 
         if (noveltyType === 'licencia' && newDates.length === 3 && !hasShownLicenseNotification) {
-          setIsLicenseNotificationOpen(true);
-          setHasShownLicenseNotification(true);
+          setIsLicenseNotificationOpen(true)
+          setHasShownLicenseNotification(true)
         }
       }
-    
-      return newDates;
-    });
+
+      return newDates
+    })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
 
@@ -105,8 +103,8 @@ export default function PermitRequestForm() {
       phone: userData.phone,
       dates: selectedDates.map(date => format(date, 'yyyy-MM-dd')),
       noveltyType,
-      time: (e.target as HTMLFormElement).time?.value || '',
-      description: (e.target as HTMLFormElement).description.value,
+      time: e.currentTarget.time?.value || '',
+      description: e.currentTarget.description.value,
     }
 
     try {
@@ -123,8 +121,8 @@ export default function PermitRequestForm() {
       }
 
       const result = await response.json()
-      console.log("New permit request result:", result);
-      
+      console.log("New permit request result:", result)
+
       // Actualizar la aprobación
       const approvalResponse = await fetch(`http://127.0.0.1:8000/update-approval/${result.id}`, {
         method: 'PUT',
@@ -132,31 +130,32 @@ export default function PermitRequestForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          approved_by: (e.target as HTMLFormElement).acceptedBy.value
+          approved_by: e.currentTarget.acceptedBy.value,
         }),
       })
 
       if (!approvalResponse.ok) {
-        const errorData = await approvalResponse.json();
-        console.error("Approval update error:", errorData);
-        throw new Error(`Error al actualizar la aprobación: ${errorData.detail}`);
+        const errorData = await approvalResponse.json()
+        console.error("Approval update error:", errorData)
+        throw new Error(`Error al actualizar la aprobación: ${errorData.detail}`)
       }
 
-      const approvalResult = await approvalResponse.json();
-      console.log("Approval update result:", approvalResult);
+      const approvalResult = await approvalResponse.json()
+      console.log("Approval update result:", approvalResult)
 
       setIsSuccess(true)
+
       // Resetear el formulario
-      e.target.reset()
+      e.currentTarget.reset()
       setSelectedDates([])
       setNoveltyType('')
       setHasShownLicenseNotification(false)
       setUserData({ code: '', name: '', phone: '' })
     } catch (error) {
       console.error('Error:', error)
-      // setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
       setIsLoading(false)
+
       // Resetear el éxito después de 3 segundos
       setTimeout(() => setIsSuccess(false), 3000)
     }
@@ -172,7 +171,7 @@ export default function PermitRequestForm() {
     }
     setIsConfirmationDialogOpen(false)
   }
-
+  
   return (
     <div className="min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <Navigation />
