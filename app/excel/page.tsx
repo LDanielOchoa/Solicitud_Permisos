@@ -47,20 +47,17 @@ export default function HistoricalRecords() {
   const [records, setRecords] = useState<Record[]>([])
   const [filteredRecords, setFilteredRecords] = useState<Record[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState('all')
-  const [weekFilter, setWeekFilter] = useState<string>(getCurrentWeek())
-  const [loading, setLoading] = useState(true)
+  const [filterType, setFilterType] = useState('all');
+  const [weekFilter, setWeekFilter] = useState<string>(() => getCurrentWeek());
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchRecords()
-  }, [weekFilter, fetchRecords])
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const week = Math.ceil((((now.getTime() - start.getTime()) / 86400000) + start.getDay() + 1) / 7);
+    return week.toString();
+  };
 
-  function getCurrentWeek() {
-    const now = new Date()
-    const start = new Date(now.getFullYear(), 0, 1)
-    const week = Math.ceil((((now.getTime() - start.getTime()) / 86400000) + start.getDay() + 1) / 7)
-    return week.toString()
-  }
 
   const fetchRecords = useCallback(async () => {
     try {
@@ -74,6 +71,10 @@ export default function HistoricalRecords() {
       setLoading(false)
     }
   }, [weekFilter])
+
+  useEffect(() => {
+    fetchRecords()
+  }, [weekFilter, fetchRecords])
 
   const filterRecords = useCallback(() => {
     let filtered = [...records]
@@ -141,39 +142,44 @@ export default function HistoricalRecords() {
       }
   
       let rowIndex = 2; // Comienza en la fila 3
-      permisosData.forEach((record) => {
-        // Manejo seguro de las fechas
+
+      // Asegúrate de que permisosData es un arreglo de tipo Record[]
+      permisosData.forEach((record: Record) => {
         let startDate = record.fecha_inicio;
         let endDate = record.fecha_fin;
-  
-        // Solo procesar si las fechas contienen coma
+
         if (record.fecha_inicio && record.fecha_inicio.includes(',')) {
           startDate = record.fecha_inicio.split(',')[0].trim();
         }
-  
+
         if (record.fecha_fin && record.fecha_fin.includes(',')) {
           endDate = record.fecha_fin.split(',')[1].trim();
         }
-  
-        ws[`A${rowIndex}`] = { v: record.code };     // Columna A
-        ws[`B${rowIndex}`] = { v: startDate };       // Columna B
-        ws[`C${rowIndex}`] = { v: endDate };         // Columna C
-        ws[`D${rowIndex}`] = { v: record.novedad };  // Columna D
+
+        ws[`A${rowIndex}`] = { v: record.code };     
+        ws[`B${rowIndex}`] = { v: startDate };       
+        ws[`C${rowIndex}`] = { v: endDate };         
+        ws[`D${rowIndex}`] = { v: record.novedad };  
         rowIndex++;
       });
-  
-      // Actualizar el rango
-      const range = XLSX.utils.decode_range(ws['!ref']);
-      range.e.r = rowIndex - 1;
-      ws['!ref'] = XLSX.utils.encode_range(range);
-  
-      // Guardar el archivo
+
+      // Asegúrate de que ws['!ref'] no sea undefined antes de usar decode_range
+      if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        range.e.r = rowIndex - 1;
+        ws['!ref'] = XLSX.utils.encode_range(range);
+      } else {
+        // Si !ref no está definido, crea una referencia nueva
+        ws['!ref'] = `A1:D${rowIndex - 1}`;
+      }
+
+      // Guarda el archivo Excel
       XLSX.writeFile(workbook, 'Novedad_conductor_actualizado.xlsx');
+
     } catch (error) {
       console.error('Error exporting Excel permisos:', error);
     }
   };
-  
 
   const generateWeekOptions = () => {
     const options = []
@@ -293,4 +299,3 @@ export default function HistoricalRecords() {
     </Card>
   )
 }
-

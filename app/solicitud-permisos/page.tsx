@@ -98,6 +98,7 @@ export default function PermitRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    const form = e.target as HTMLFormElement; 
 
     const formData = {
       code: userData.code,
@@ -147,11 +148,11 @@ export default function PermitRequestForm() {
 
       setIsSuccess(true)
       // Resetear el formulario
-      e.target.reset()
-      setSelectedDates([])
-      setNoveltyType('')
-      setHasShownLicenseNotification(false)
-      setUserData({ code: '', name: '', phone: '' })
+      form.reset(); // Ahora TypeScript reconoce 'reset'
+      setSelectedDates([]);
+      setNoveltyType('');
+      setHasShownLicenseNotification(false);
+      setUserData({ code: '', name: '', phone: '' });
     } catch (error) {
       console.error('Error:', error)
       // setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
