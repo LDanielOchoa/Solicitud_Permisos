@@ -25,6 +25,7 @@ const nextConfig = {
 
   experimental: {
     outputFileTracing: true, // Optimiza la inclusión de dependencias necesarias
+    optimizeCss: false, // Desactiva la optimización de CSS (desactiva critters)
   },
 
   // Reduce el tamaño del build excluyendo archivos innecesarios
