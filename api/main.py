@@ -27,7 +27,7 @@ mimetypes.add_type('image/png', '.png')
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://miprogramacionsao6.railway.internal"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

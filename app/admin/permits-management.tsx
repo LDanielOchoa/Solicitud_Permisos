@@ -218,7 +218,7 @@ export default function PermitsManagement() {
           </TabsTrigger>
           <TabsTrigger value="equipment" className="tab-trigger">
             <Laptop className="w-5 h-5 mr-2" />
-            Equipos
+            Postulaciones
           </TabsTrigger>
         </TabsList>
       </Tabs>
