@@ -44,19 +44,19 @@ interface Record {
 }
 
 export default function HistoricalRecords() {
-  const [records, setRecords] = useState<Record[]>([])
-  const [filteredRecords, setFilteredRecords] = useState<Record[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState('all');
-  const [weekFilter, setWeekFilter] = useState<string>(() => getCurrentWeek());
-  const [loading, setLoading] = useState(true);
-
   const getCurrentWeek = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
     const week = Math.ceil((((now.getTime() - start.getTime()) / 86400000) + start.getDay() + 1) / 7);
     return week.toString();
   };
+
+  const [records, setRecords] = useState<Record[]>([])
+  const [filteredRecords, setFilteredRecords] = useState<Record[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterType, setFilterType] = useState('all');
+  const [weekFilter, setWeekFilter] = useState<string>(() => getCurrentWeek());
+  const [loading, setLoading] = useState(true);
 
 
   const fetchRecords = useCallback(async () => {
