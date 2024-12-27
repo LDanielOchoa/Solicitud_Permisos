@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import LoadingOverlay from '@/components/loading-overlay'
 import Image from 'next/image'
-// import { ErrorModal } from '@/components/error-modal'
+import { ErrorModal } from '@/components/error-modal'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
@@ -84,7 +84,7 @@ export default function LoginPage() {
             <div className="flex justify-center mb-6">
               <Image src="/sao6.png" alt="Logo" width={100} height={100} />
             </div>
-            <h2 className="text-3xl font-bold text-green-700 text-center">¡Hola!</h2>
+            <h2 className="text-3xl font-bold text-green-700 text-center">Sao6</h2>
             <p className="text-green-600 text-center">Inicia sesión en tu cuenta</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -184,8 +184,9 @@ export default function LoginPage() {
       </motion.div>
 
       {isLoading && <LoadingOverlay />}
-      {/* <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> */}
+      <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> 
     </div>
   )
 }
+
 
