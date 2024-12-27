@@ -85,7 +85,7 @@ export default function EquipmentRequestForm() {
 
     const fetchUsersList = async () => {
       try {
-        const response = await fetch('http://solicitud-permisos.onrender.com/users/list')
+        const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
         if (!response.ok) {
           throw new Error('Error al obtener la lista de usuarios')
         }
