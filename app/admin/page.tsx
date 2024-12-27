@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,8 +8,6 @@ import PermitsManagement from './permits-management'
 import Indicators from './indicators'
 import PermitRequestForm from './request-form'
 import HistoricalRecords from '../excel/page'
-
-
 
 export default function AdminDashboard() {
   type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history'

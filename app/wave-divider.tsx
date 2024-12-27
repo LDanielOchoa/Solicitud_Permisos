@@ -1,3 +1,5 @@
+'use client'
+
 const WaveDivider = () => {
     return (
       <div className="absolute right-0 top-0 h-full w-1/3 lg:block hidden">

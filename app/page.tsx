@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import LoadingOverlay from '@/components/loading-overlay'
 import Image from 'next/image'
-import { ErrorModal } from '@/components/error-modal'
+// import { ErrorModal } from '@/components/error-modal'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
@@ -184,7 +184,7 @@ export default function LoginPage() {
       </motion.div>
 
       {isLoading && <LoadingOverlay />}
-      <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} />
+      {/* <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> */}
     </div>
   )
 }

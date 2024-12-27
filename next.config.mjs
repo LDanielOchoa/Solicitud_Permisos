@@ -1,18 +1,23 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
 const nextConfig = {
-  productionBrowserSourceMaps: true, // Mantén los mapas de fuente en producción si son necesarios
+  experimental: {
+    appDir: true, // Activa la nueva estructura de aplicaciones
+    outputFileTracing: true, // Optimiza la inclusión de dependencias necesarias
+    optimizeCss: false, // Desactiva la optimización de CSS si es necesario
+  },
 
-  // Habilita Webpack para excluir dependencias del paquete final
+  productionBrowserSourceMaps: true,
+
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [
-        "chart.js",
-        "recharts",
-        "nodemailer", // Excluye dependencias pesadas
+        ...config.externals || [],
+        "chart.js", 
+        "recharts", 
+        "nodemailer", 
       ];
     }
 
-    // Optimiza el manejo de dependencias y módulos
     config.optimization = {
       ...config.optimization,
       splitChunks: {
@@ -23,13 +28,9 @@ const nextConfig = {
     return config;
   },
 
-  experimental: {
-    outputFileTracing: true, // Optimiza la inclusión de dependencias necesarias
-    optimizeCss: false, // Desactiva la optimización de CSS (desactiva critters)
-  },
-
-  // Reduce el tamaño del build excluyendo archivos innecesarios
-  poweredByHeader: false, // Opcional: desactiva el header X-Powered-By
+  poweredByHeader: false,
+  reactStrictMode: true,
+  swcMinify: true,
 };
 
 export default nextConfig;
