@@ -5,12 +5,28 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, FileText, Phone, MapPin, Users } from 'lucide-react'
 import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { es } from 'date-fns/locale';
+
+interface Request {
+  request_type: 'permiso' | string;
+  tipo_novedad: string;
+  createdAt: string;
+  status: 'approved' | 'rejected';
+  telefono?: string;
+  fecha?: string;
+  hora?: string;
+  zona?: string;
+  comp_am?: string;
+  comp_pm?: string;
+  turno?: string;
+  description?: string;
+  respuesta?: string;
+}
 
 interface RequestDetailsProps {
-  request: any
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  request: Request;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function RequestDetailsDialog({ request, open, onOpenChange }: RequestDetailsProps) {

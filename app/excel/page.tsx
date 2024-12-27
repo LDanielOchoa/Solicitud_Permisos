@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Download, Search, FileSpreadsheet } from 'lucide-react'
 import {
   Table,
@@ -53,7 +53,7 @@ export default function HistoricalRecords() {
 
   useEffect(() => {
     fetchRecords()
-  }, [weekFilter])
+  }, [weekFilter, fetchRecords])
 
   function getCurrentWeek() {
     const now = new Date()
@@ -62,7 +62,7 @@ export default function HistoricalRecords() {
     return week.toString()
   }
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:8000/historical-records?week=${weekFilter}`)
       const data = await response.json()
@@ -73,9 +73,9 @@ export default function HistoricalRecords() {
       console.error('Error fetching records:', error)
       setLoading(false)
     }
-  }
+  }, [weekFilter])
 
-  const filterRecords = () => {
+  const filterRecords = useCallback(() => {
     let filtered = [...records]
 
     // Search filter
@@ -92,11 +92,11 @@ export default function HistoricalRecords() {
     }
 
     setFilteredRecords(filtered)
-  }
+  }, [searchTerm, filterType, records])
 
   useEffect(() => {
     filterRecords()
-  }, [searchTerm, filterType, records])
+  }, [searchTerm, filterType, records, filterRecords])
 
   const exportToExcel = () => {
     const exportData = filteredRecords.map(record => ({

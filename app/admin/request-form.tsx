@@ -27,7 +27,6 @@ export default function PermitRequestForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [noveltyType, setNoveltyType] = useState('')
   const [userData, setUserData] = useState({ code: '', name: '', phone: '' })
-  const [error, setError] = useState('')
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
@@ -48,7 +47,7 @@ export default function PermitRequestForm() {
       setUsers(data)
     } catch (error) {
       console.error('Error fetching users:', error)
-      setError('No se pudo cargar la lista de usuarios.')
+      // setError('No se pudo cargar la lista de usuarios.')
     }
   }
 
@@ -64,7 +63,7 @@ export default function PermitRequestForm() {
       setUserData({ code: data.code, name: data.name, phone: data.phone || '' })
     } catch (error) {
       console.error('Error fetching user data:', error)
-      setError('No se pudieron cargar los datos del usuario.')
+      // setError('No se pudieron cargar los datos del usuario.')
     } finally {
       setIsLoading(false)
     }
@@ -155,7 +154,7 @@ export default function PermitRequestForm() {
       setUserData({ code: '', name: '', phone: '' })
     } catch (error) {
       console.error('Error:', error)
-      setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
+      // setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
       setIsLoading(false)
       // Resetear el éxito después de 3 segundos
@@ -256,7 +255,7 @@ export default function PermitRequestForm() {
                 required 
                 onValueChange={(value) => {
                   setNoveltyType(value)
-                  setError('')
+                  // setError('')
                   setHasShownLicenseNotification(false)
                 }}
                 value={noveltyType}
@@ -409,3 +408,4 @@ export default function PermitRequestForm() {
     </div>
   )
 }
+

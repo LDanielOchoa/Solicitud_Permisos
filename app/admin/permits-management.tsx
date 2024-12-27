@@ -25,7 +25,8 @@ type Request = {
   codeAM?: string
   codePM?: string
   shift?: string
-  [key: string]: any
+  noveltyType?: string
+  [key: string]: string | undefined
 }
 
 const LoadingSpinner = () => (

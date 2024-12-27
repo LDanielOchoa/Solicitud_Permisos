@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState} from 'react'
 import { User, LogOut, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"

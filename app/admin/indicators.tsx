@@ -22,7 +22,7 @@ type Request = {
   type: string
   status: string
   createdAt: string
-  [key: string]: any
+  [key: string]: string | number | Date
 }
 
 const COLORS = ['#F8B503', '#FF0015', '#12CB02', '#FF8042', '#8884D8', '#82CA9D']
@@ -33,7 +33,7 @@ export default function Indicators() {
   const [timeRange, setTimeRange] = useState('month')
   const [startDate, setStartDate] = useState<Date | undefined>(new Date(new Date().setMonth(new Date().getMonth() - 1)))
   const [endDate, setEndDate] = useState<Date | undefined>(new Date())
-  const [isLoading, setIsLoading] = useState(true)
+  //const [isLoading, setIsLoading] = useState(true)
   const [activeChart, setActiveChart] = useState<'pie' | 'bar' | 'line'>('pie')
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function Indicators() {
 
   const loadRequests = async () => {
     try {
-      setIsLoading(true)
+      //setIsLoading(true)
       const data = await fetchRequests()
       setRequests(data)
     } catch (error) {
@@ -53,7 +53,7 @@ export default function Indicators() {
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      //setIsLoading(false)
     }
   }
 
@@ -177,7 +177,7 @@ export default function Indicators() {
             <Select value={timeRange} onValueChange={(value) => {
               setTimeRange(value)
               const end = new Date()
-              let start = new Date()
+              const start = new Date()
               if (value === 'week') start.setDate(end.getDate() - 7)
               else if (value === 'month') start.setMonth(end.getMonth() - 1)
               else if (value === 'year') start.setFullYear(end.getFullYear() - 1)

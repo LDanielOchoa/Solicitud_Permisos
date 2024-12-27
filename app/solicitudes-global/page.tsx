@@ -37,7 +37,7 @@ interface Request {
   fecha?: string
   comp_am?: string
   comp_pm?: string
-  [key: string]: any
+  [key: string]: string | number | undefined
 }
 
 export default function Solicitudes() {
