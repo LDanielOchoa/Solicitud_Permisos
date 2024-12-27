@@ -16,7 +16,7 @@ export function FilePreview({ fileName, fileUrl, onClick }: FilePreviewProps) {
   const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileType || '')
   const isPDF = fileType === 'pdf'
 
-  const fullFileUrl = `http://127.0.0.1:8000/files/${encodeURIComponent(fileUrl)}`
+  const fullFileUrl = `http://solicitud-permisos.onrender.com/files/${encodeURIComponent(fileUrl)}`
 
   if (isImage && !isImageError) {
     return (

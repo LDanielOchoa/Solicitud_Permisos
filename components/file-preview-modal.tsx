@@ -46,7 +46,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
 
   const currentFileName = fileNames[currentFileIndex] || ''
   const currentFileUrl = fileUrls[currentFileIndex] || ''
-  const fullFileUrl = `${'http://127.0.0.1:8000'}/uploads/${currentFileUrl}`
+  const fullFileUrl = `${'http://solicitud-permisos.onrender.com'}/uploads/${currentFileUrl}`
 
   const handleDownload = async () => {
     try {
