@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { FileText, FileIcon, ImageIcon } from 'lucide-react'
 import Image from 'next/image'
