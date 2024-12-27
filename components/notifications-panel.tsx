@@ -45,7 +45,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const fetchNotifications = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('https://solicitud-permisos.onrender.com/8000/requests')
+      const response = await fetch('https://solicitud-permisos.onrender.com/requests')
 
       if (!response.ok) {
         throw new Error('Failed to fetch notifications')
