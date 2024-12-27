@@ -10,9 +10,9 @@ import PermitRequestForm from './request-form'
 import HistoricalRecords from '../excel/page'
 
 
-type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history'
 
 export default function AdminDashboard() {
+  type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history'
   const MotionCard = motion(Card) 
   const [activeSection, setActiveSection] = useState<SectionType>('permits')
 
