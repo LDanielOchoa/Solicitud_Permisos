@@ -43,7 +43,7 @@ export default function PermitRequestForm() {
           return
         }
 
-        const response = await fetch('http://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -86,7 +86,7 @@ export default function PermitRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
 
-      const response = await fetch('http://solicitud-permisos.onrender.com/update-phone', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/update-phone', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ export default function PermitRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
   
-      const response = await fetch('http://solicitud-permisos.onrender.com/permit-request', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/permit-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

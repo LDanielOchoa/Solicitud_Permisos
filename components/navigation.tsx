@@ -29,7 +29,7 @@ export default function Navigation() {
         const token = localStorage.getItem('accessToken')
         if (!token) return
 
-        const response = await fetch('http://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -78,7 +78,7 @@ export default function Navigation() {
       const token = localStorage.getItem('accessToken')
       if (!token) throw new Error('El token no funciona')
 
-      const response = await fetch('http://solicitud-permisos.onrender.com/auth/update-phone', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/auth/update-phone', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

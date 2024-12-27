@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://solicitud-permisos.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://solicitud-permisos.onrender.com';
 
 export async function fetchRequests() {
   const response = await fetch(`${API_URL}/requests`);

@@ -27,7 +27,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await fetch('http://solicitud-permisos.onrender.com/auth/login', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

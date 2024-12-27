@@ -39,7 +39,7 @@ export default function PermitRequestForm() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://solicitud-permisos.onrender.com/users/list')
+      const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
       if (!response.ok) {
         throw new Error('Error al obtener la lista de usuarios')
       }
@@ -54,7 +54,7 @@ export default function PermitRequestForm() {
     setIsCodePopoverOpen(false)
     setIsLoading(true)
     try {
-      const response = await fetch(`http://solicitud-permisos.onrender.com/user/${selectedCode}`)
+      const response = await fetch(`https://solicitud-permisos.onrender.com/user/${selectedCode}`)
       if (!response.ok) {
         throw new Error('Error al obtener datos del usuario')
       }
@@ -108,7 +108,7 @@ export default function PermitRequestForm() {
     }
 
     try {
-      const response = await fetch('http://solicitud-permisos.onrender.com/new-permit-request', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/new-permit-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

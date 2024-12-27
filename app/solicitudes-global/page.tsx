@@ -56,7 +56,7 @@ export default function Solicitudes() {
         const token = localStorage.getItem('accessToken')
         if (!token) return
 
-        const response = await fetch('http://solicitud-permisos.onrender.com/solicitudes', {
+        const response = await fetch('https://solicitud-permisos.onrender.com/solicitudes', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

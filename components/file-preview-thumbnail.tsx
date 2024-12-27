@@ -34,7 +34,7 @@ export default function FilePreviewThumbnail({ fileName, fileUrl, onClick }: Fil
   }
 
   const cleanFileUrl = extractFileName(fileUrl)
-  const fullFileUrl = `${'http://solicitud-permisos.onrender.com'}/uploads/${encodeURIComponent(cleanFileUrl)}`
+  const fullFileUrl = `${'https://solicitud-permisos.onrender.com'}/uploads/${encodeURIComponent(cleanFileUrl)}`
 
   if (isImage && !isImageError) {
     return (
