@@ -111,8 +111,7 @@ export default function Navigation() {
           variant="ghost" 
           className="text-green-700 hover:text-green-800 hover:bg-green-100"
         >
-          <span className="hidden sm:inline">Solicitud de </span>
-          Permisos
+          <span className="hidden sm:inline">Solicitud de</span>Permisos
         </Button>
       </Link>
       <Link href="/solicitud-equipo" passHref>
@@ -120,7 +119,7 @@ export default function Navigation() {
           variant="ghost" 
           className="text-green-700 hover:text-green-800 hover:bg-green-100"
         >
-          <span className="hidden sm:inline">Solicitud de </span>
+          <span className="hidden sm:inline">Solicitud de</span>
           Postulaciones
         </Button>
       </Link>

@@ -19,7 +19,7 @@ import { SuccessMessage } from '../../components/SuccessMessage'
 
 const getCurrentWeekDates = () => {
   const today = new Date()
-  const baseDate = new Date(2024, 0, 6) // January 13, 2024 (Monday)
+  const baseDate = new Date(2025, 0, 13) // January 13, 2024 (Monday)
   
   // If we're before January 13, 2024, show January 13-19
   if (today < baseDate) {
