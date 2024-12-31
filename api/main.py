@@ -665,6 +665,34 @@ def get_user_by_code(code: str):
     finally:
         close_connection(connection)
         
+@app.delete("/requests/{request_id}")
+async def delete_request(request_id: int):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor()
+    try:
+        # Intentar eliminar de permit_perms primero
+        cursor.execute("DELETE FROM permit_perms WHERE id = %s", (request_id,))
+        
+        if cursor.rowcount == 0:
+            # Si no se eliminó nada de permit_perms, intentar en permit_post
+            cursor.execute("DELETE FROM permit_post WHERE id = %s", (request_id,))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+        
+        connection.commit()
+        return {"message": "Solicitud eliminada exitosamente"}
+        
+    except Exception as e:
+        connection.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar la solicitud: {str(e)}")
+    
+    finally:
+        close_connection(connection)    
+
 @app.get("/permit-request/{request_id}")
 async def get_permit_request(request_id: int):
     connection = create_connection()

@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 import { UserSelectDialog } from '../../components/user-select-dialog'
+import { SuccessMessage } from '../../components/SuccessMessage'
 
 interface User {
   code: string;
@@ -85,7 +86,7 @@ export default function EquipmentRequestForm() {
 
     const fetchUsersList = async () => {
       try {
-        const response = await fetch('http://solicitud-permisos.onrender.com/users/list')
+        const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
         if (!response.ok) {
           throw new Error('Error al obtener la lista de usuarios')
         }
@@ -120,7 +121,7 @@ export default function EquipmentRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
 
-      const response = await fetch('http://solicitud-permisos.onrender.com/equipment-request', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/equipment-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +147,7 @@ export default function EquipmentRequestForm() {
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
       setIsSubmitting(false)
-      setTimeout(() => setIsSuccess(false), 3000)
+      setTimeout(() => setIsSuccess(false), 5000)
     }
   }
 
@@ -344,18 +345,10 @@ export default function EquipmentRequestForm() {
         title="Seleccionar Usuario PM"
       />
 
-      <AnimatePresence>
-        {isSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="item-center fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-lg shadow-lg"
-          >
-            ¡Solicitud de equipo enviada con éxito!
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SuccessMessage 
+        isVisible={isSuccess} 
+        onClose={() => setIsSuccess(false)} 
+      />
     </div>
   )
 }

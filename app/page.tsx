@@ -10,6 +10,7 @@ import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import LoadingOverlay from '@/components/loading-overlay'
 import Image from 'next/image'
 import { ErrorModal } from '@/components/error-modal'
+import { VideoAlert } from '@/components/VideoAlert'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
@@ -21,10 +22,26 @@ export default function LoginPage() {
   const [showErrorModal, setShowErrorModal] = useState(false)
   const router = useRouter()
 
+  const validateCode = (code: string): boolean => {
+    if (code.length !== 4) return false;
+    const numCode = parseInt(code, 10);
+    if (numCode < 10 && code.startsWith('000')) return true;
+    if (numCode < 100 && code.startsWith('00')) return true;
+    if (numCode < 1000 && code.startsWith('0')) return true;
+    if (numCode >= 1000) return true;
+    return false;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+
+    if (!validateCode(code)) {
+      setError('El código debe tener 4 dígitos. Use ceros a la izquierda si es necesario (ej: 0025, 0125, 1111).')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch('https://solicitud-permisos.onrender.com/auth/login', {
@@ -43,7 +60,7 @@ export default function LoginPage() {
         localStorage.setItem('userCode', code)
         
         if (data.role === 'admin') {
-          router.push('/admin')
+          router.push('/dashboard-admin-requests')
         } else {
           router.push('/dashboard')
         }
@@ -102,10 +119,14 @@ export default function LoginPage() {
                       id="code"
                       type="text"
                       value={code}
-                      onChange={(e) => setCode(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                        setCode(value)
+                      }}
                       className="pl-10 border-green-300 focus:border-green-500 focus:ring-green-500"
-                      placeholder="Ingrese su código"
+                      placeholder="Ingrese su código (ej: 0025, 0125, 1111)"
                       required
+                      maxLength={4}
                     />
                   </div>
                 </div>
@@ -183,10 +204,10 @@ export default function LoginPage() {
         </div>
       </motion.div>
 
+      <VideoAlert />
       {isLoading && <LoadingOverlay />}
       <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> 
     </div>
   )
 }
-
 

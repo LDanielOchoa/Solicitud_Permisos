@@ -45,7 +45,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const fetchNotifications = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('https://solicitud-permisos.onrender.com/8000/requests')
+      const response = await fetch('https://solicitud-permisos.onrender.com/requests')
 
       if (!response.ok) {
         throw new Error('Failed to fetch notifications')
@@ -94,7 +94,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     try {
       const newStatus = currentStatus === 0 ? 1 : 2
   
-      const response = await fetch(`http:s//solicitud-permisos.onrender.com/requests/${notificationId}/notifications`, {
+      const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${notificationId}/notifications`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notification_status: newStatus }),

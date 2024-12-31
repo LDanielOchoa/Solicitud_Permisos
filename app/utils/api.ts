@@ -29,4 +29,12 @@ export async function updateRequestStatus(id: string, action: 'approve' | 'rejec
   return response.json();
 }
 
+export async function deleteRequest(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/requests/${id}`, {
+    method: 'DELETE',
+  });
 
+  if (!response.ok) {
+    throw new Error('Error al eliminar la solicitud');
+  }
+}

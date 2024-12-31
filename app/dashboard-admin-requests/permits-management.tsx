@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Laptop, Filter, ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react'
+import { FileText, Laptop, Filter, ChevronLeft, ChevronRight, Clock, MapPin, Users, Trash2 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -10,8 +10,14 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import RequestDetails from '../../components/request-details'
-import { fetchRequests, updateRequestStatus } from '../utils/api'
+import { fetchRequests, updateRequestStatus, deleteRequest } from '../utils/api'
 import './permits-management.css'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 
 type Request = {
   id: string
@@ -116,6 +122,24 @@ export default function PermitsManagement() {
     }
   }
 
+  const handleDeleteRequest = async (id: string) => {
+    try {
+      await deleteRequest(id)
+      await loadRequests()
+      toast({
+        title: "Éxito",
+        description: "Solicitud eliminada exitosamente",
+      })
+    } catch (error) {
+      console.error('Error deleting request:', error)
+      toast({
+        title: "Error",
+        description: "Error al eliminar la solicitud",
+        variant: "destructive",
+      })
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-200 text-yellow-800'
@@ -135,75 +159,85 @@ export default function PermitsManagement() {
     const isEquipmentRequest = !('noveltyType' in request)
 
     return (
-      <Card
-        key={request.id}
-        className="card hover:shadow-lg transition-all cursor-pointer"
-        onClick={() => setSelectedRequest(request)}
-      >
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <Badge 
-              variant="outline" 
-              className={`mb-2 text-sm font-medium ${
-                isEquipmentRequest ? 'bg-blue-50 text-blue-700 border-blue-300' : 
-                'bg-purple-50 text-purple-700 border-purple-300'
-              }`}
-            >
-              {request.type}
-            </Badge>
-            <Badge className={`status-badge ${getStatusColor(request.status)}`}>
-              {request.status === 'approved' ? 'Aprobada' :
-               request.status === 'rejected' ? 'Rechazada' :
-               'Pendiente'}
-            </Badge>
-          </div>
-          <CardTitle className="text-lg">
-            {request.name}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Código: {request.code}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="mr-2 h-4 w-4" />
-              {new Date(request.createdAt).toLocaleDateString()}
-            </div>
-            
-            {isEquipmentRequest && (
-              <>
-                {request.zona && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Zona: {request.zona}
-                  </div>
-                )}
-                {(request.codeAM || request.codePM) && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="mr-2 h-4 w-4" />
-                    {request.codeAM && `AM: ${request.codeAM}`}
-                    {request.codeAM && request.codePM && ' | '}
-                    {request.codePM && `PM: ${request.codePM}`}
-                  </div>
-                )}
-                {request.shift && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="mr-2 h-4 w-4" />
-                    Turno: {request.shift}
-                  </div>
-                )}
-              </>
-            )}
-            
-            {request.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                {request.description}
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <Card
+            key={request.id}
+            className="card hover:shadow-lg transition-all cursor-pointer"
+            onClick={() => setSelectedRequest(request)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <Badge 
+                  variant="outline" 
+                  className={`mb-2 text-sm font-medium ${
+                    isEquipmentRequest ? 'bg-blue-50 text-blue-700 border-blue-300' : 
+                    'bg-purple-50 text-purple-700 border-purple-300'
+                  }`}
+                >
+                  {request.type}
+                </Badge>
+                <Badge className={`status-badge ${getStatusColor(request.status)}`}>
+                  {request.status === 'approved' ? 'Aprobada' :
+                   request.status === 'rejected' ? 'Rechazada' :
+                   'Pendiente'}
+                </Badge>
+              </div>
+              <CardTitle className="text-lg">
+                {request.name}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Código: {request.code}
               </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-2 h-4 w-4" />
+                  {new Date(request.createdAt).toLocaleDateString()}
+                </div>
+                
+                {isEquipmentRequest && (
+                  <>
+                    {request.zona && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Zona: {request.zona}
+                      </div>
+                    )}
+                    {(request.codeAM || request.codePM) && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Users className="mr-2 h-4 w-4" />
+                        {request.codeAM && `AM: ${request.codeAM}`}
+                        {request.codeAM && request.codePM && ' | '}
+                        {request.codePM && `PM: ${request.codePM}`}
+                      </div>
+                    )}
+                    {request.shift && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="mr-2 h-4 w-4" />
+                        Turno: {request.shift}
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {request.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                    {request.description}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={() => handleDeleteRequest(request.id)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Eliminar
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     )
   }
 

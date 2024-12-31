@@ -124,7 +124,7 @@ export default function PermitRequestForm() {
       console.log("New permit request result:", result)
 
       // Actualizar la aprobación
-      const approvalResponse = await fetch(`http://127.0.0.1:8000/update-approval/${result.id}`, {
+      const approvalResponse = await fetch(`https://solicitud-permisos.onrender.com/update-approval/${result.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

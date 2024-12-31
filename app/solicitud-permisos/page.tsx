@@ -9,12 +9,33 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, X, Upload, FileText, AlertCircle, Calendar } from 'lucide-react'
-import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
+import { format, addDays, isSameDay, startOfWeek, addWeeks, isBefore, isAfter, setHours, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
+import { SuccessMessage } from '../../components/SuccessMessage'
+
+const getCurrentWeekDates = () => {
+  const today = new Date()
+  const baseDate = new Date(2024, 0, 6) // January 13, 2024 (Monday)
+  
+  // If we're before January 13, 2024, show January 13-19
+  if (today < baseDate) {
+    return baseDate
+  }
+  
+  const wednesday = setHours(startOfWeek(today, { weekStartsOn: 3 }), 12)
+  const nextWednesday = addWeeks(wednesday, 1)
+  
+  // If we're after Wednesday 12 PM, show next week's dates
+  if (isAfter(today, wednesday) && isBefore(today, nextWednesday)) {
+    return addWeeks(baseDate, 1)
+  }
+  
+  return baseDate
+}
 
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
@@ -30,6 +51,9 @@ export default function PermitRequestForm() {
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
+  const [weekDates, setWeekDates] = useState<Date[]>(
+    Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i))
+  )
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +96,17 @@ export default function PermitRequestForm() {
 
     fetchUserData()
   }, [router])
+
+  useEffect(() => {
+    const updateDates = () => {
+      setWeekDates(Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i)))
+    }
+
+    const timer = setInterval(updateDates, 60000) // Check every minute
+    updateDates() // Initial update
+
+    return () => clearInterval(timer)
+  }, [])
 
   const handlePhoneDoubleClick = () => {
     setIsPhoneDialogOpen(true)
@@ -184,16 +219,18 @@ export default function PermitRequestForm() {
     const time = formData.get('time') as string | null
     const description = formData.get('description') as string | null
   
-    const data = {
-      code: userData.code,
-      name: userData.name,
-      phone: userData.phone,
-      dates: selectedDates.map(date => format(date, 'yyyy-MM-dd')),
-      noveltyType,
-      time: time || '',
-      description: description || '',
-      files: selectedFiles.map(file => file.name),
-    }
+    const formDataToSend = new FormData()
+    formDataToSend.append('code', userData.code)
+    formDataToSend.append('name', userData.name)
+    formDataToSend.append('phone', userData.phone)
+    formDataToSend.append('dates', JSON.stringify(selectedDates.map(date => format(date, 'yyyy-MM-dd'))))
+    formDataToSend.append('noveltyType', noveltyType)
+    formDataToSend.append('time', time || '')
+    formDataToSend.append('description', description || '')
+    
+    selectedFiles.forEach((file, index) => {
+      formDataToSend.append(`file${index}`, file)
+    })
   
     try {
       const token = localStorage.getItem('accessToken')
@@ -204,10 +241,9 @@ export default function PermitRequestForm() {
       const response = await fetch('https://solicitud-permisos.onrender.com/permit-request', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: formDataToSend,
       })
   
       if (!response.ok) {
@@ -228,13 +264,11 @@ export default function PermitRequestForm() {
       setError('Ocurrió un error al enviar la solicitud. Por favor, inténtelo de nuevo.')
     } finally {
       setIsLoading(false)
-      // Resetear el éxito después de 3 segundos
-      setTimeout(() => setIsSuccess(false), 3000)
+      // Resetear el éxito después de 5 segundos
+      setTimeout(() => setIsSuccess(false), 5000)
     }
   }
   
-
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
 
   const handleConfirmation = (confirmed: boolean) => {
     if (confirmed) {
@@ -432,18 +466,10 @@ export default function PermitRequestForm() {
         </form>
       </motion.div>
 
-      <AnimatePresence>
-        {isSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-8 right-8 bg-green-500 text-white p-4 rounded-lg shadow-lg"
-          >
-            ¡Solicitud de permiso enviada con éxito!
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SuccessMessage 
+        isVisible={isSuccess} 
+        onClose={() => setIsSuccess(false)} 
+      />
 
       <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
         <DialogContent>
