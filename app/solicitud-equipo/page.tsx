@@ -294,8 +294,8 @@ export default function EquipmentRequestForm() {
                   <SelectContent>
                     <SelectItem value="Disponible Fijo AM">Disponible Fijo AM</SelectItem>
                     <SelectItem value="Disponible Fijo PM">Disponible Fijo PM</SelectItem>
-                    <SelectItem value="Turno Cualquiera Ruta AM">Turno Cualquiera Ruta AM</SelectItem>
-                    <SelectItem value="Turno Cualquiera Ruta PM">Turno Cualquiera Ruta PM</SelectItem>
+                    <SelectItem value="Turno Cualquiera Ruta AM">Turno a cualquiera ruta AM</SelectItem>
+                    <SelectItem value="Turno Cualquiera Ruta PM">Turno a cualquiera ruta PM</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
