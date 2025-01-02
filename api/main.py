@@ -327,25 +327,43 @@ def get_requests():
     
     cursor = connection.cursor(dictionary=True)
     try:
-        # Fetch permit requests
+        # Fetch permit requests - note that for permits, tipo_novedad is the type of permit
         cursor.execute("""
-            SELECT id, code, name, telefono as phone, fecha as dates, 
-                   hora as time, tipo_novedad as noveltyType, description,
-                   files, time_created as createdAt, solicitud as status,
-                   respuesta as reason, notifications
+            SELECT 
+                id, 
+                code, 
+                name, 
+                telefono as phone, 
+                fecha as dates, 
+                hora as time, 
+                tipo_novedad as type,
+                tipo_novedad as noveltyType, 
+                description,
+                files, 
+                time_created as createdAt, 
+                solicitud as status,
+                respuesta as reason, 
+                notifications
             FROM permit_perms
         """)
         permit_requests = cursor.fetchall()
 
-        # Fetch equipment requests with additional fields
+        # Fetch equipment requests - note that for equipment, tipo_novedad is the type itself
         cursor.execute("""
-            SELECT id, code, name, tipo_novedad as type,
-                   description, time_created as createdAt,
-                   solicitud as status, respuesta as reason, 
-                   notifications, zona, 
-                   comp_am as codeAM, 
-                   comp_pm as codePM,
-                   turno as shift
+            SELECT 
+                id, 
+                code, 
+                name, 
+                tipo_novedad as type,
+                description, 
+                time_created as createdAt,
+                solicitud as status, 
+                respuesta as reason, 
+                notifications, 
+                zona, 
+                comp_am as codeAM, 
+                comp_pm as codePM,
+                turno as shift
             FROM permit_post
         """)
         equipment_requests = cursor.fetchall()
@@ -370,10 +388,15 @@ def get_requests():
                     request['files'] = request['files'].split(',')
                 except:
                     request['files'] = [request['files']]
+            
+            # Ensure status is one of: pending, approved, rejected
+            if request['status'] not in ['pending', 'approved', 'rejected']:
+                request['status'] = 'pending'
                     
         return permit_requests + equipment_requests
         
     finally:
+        cursor.close()
         close_connection(connection)
 
 @app.get("/historical-records")
@@ -709,8 +732,8 @@ async def get_permit_request(request_id: int):
     finally:
         close_connection(connection)
 
-@app.get("/excel-permisos")
-async def get_excel_permisos():
+@app.get("/excel")
+async def get_excel():
     connection = create_connection()
     if connection is None:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")

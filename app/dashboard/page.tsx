@@ -7,10 +7,12 @@ import Navigation from '../../components/navigation'
 import AnimatedDashboardButton from '../../components/AnimatedDashboardButton'
 import WelcomeBar from '../../components/WelcomeBar'
 import LoadingOverlay from '../../components/loading-overlay'
+import { VideoAlert } from '../../components/VideoAlert'
 
 export default function Dashboard() {
   const [userName, setUserName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [showVideo, setShowVideo] = useState(true)
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -47,10 +49,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 overflow-hidden">
+    <div className="min-h-screen flex flex-col p-4 overflow-hidden relative">
       <Navigation />
       
-      <div className="container mx-auto max-w-6xl">
+      <div className="container mx-auto max-w-6xl relative z-10">
         <WelcomeBar userName={userName} />
 
         <motion.div
@@ -82,6 +84,15 @@ export default function Dashboard() {
           />
         </motion.div>
       </div>
+
+      {showVideo && (
+        <>
+          <div className="fixed inset-0 bg-black/01 backdrop-blur-md z-40" />
+          <div className="fixed inset-0 z-50">
+          <VideoAlert setShowVideo={setShowVideo} />
+          </div>
+        </>
+      )}
     </div>
   )
 }

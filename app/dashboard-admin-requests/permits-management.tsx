@@ -159,7 +159,7 @@ export default function PermitsManagement() {
     const isEquipmentRequest = !('noveltyType' in request)
 
     return (
-      <ContextMenu>
+      <ContextMenu key={request.id}>
         <ContextMenuTrigger>
           <Card
             key={request.id}
@@ -196,8 +196,8 @@ export default function PermitsManagement() {
                   <Clock className="mr-2 h-4 w-4" />
                   {new Date(request.createdAt).toLocaleDateString()}
                 </div>
-                
-                {isEquipmentRequest && (
+              
+                {isEquipmentRequest ? (
                   <>
                     {request.zona && (
                       <div className="flex items-center text-sm text-muted-foreground">
@@ -220,8 +220,13 @@ export default function PermitsManagement() {
                       </div>
                     )}
                   </>
+                ) : (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Tipo: {request.noveltyType}
+                  </div>
                 )}
-                
+              
                 {request.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                     {request.description}

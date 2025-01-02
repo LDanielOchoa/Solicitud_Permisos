@@ -10,7 +10,6 @@ import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import LoadingOverlay from '@/components/loading-overlay'
 import Image from 'next/image'
 import { ErrorModal } from '@/components/error-modal'
-import { VideoAlert } from '@/components/VideoAlert'
 
 export default function LoginPage() {
   const [code, setCode] = useState('')
@@ -204,7 +203,6 @@ export default function LoginPage() {
         </div>
       </motion.div>
 
-      <VideoAlert />
       {isLoading && <LoadingOverlay />}
       <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> 
     </div>

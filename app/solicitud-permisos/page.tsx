@@ -37,6 +37,20 @@ const getCurrentWeekDates = () => {
   return baseDate
 }
 
+const isHoliday = (date: Date): boolean => {
+  // Add your holiday check logic here.  This is a placeholder.
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Example: Check if it's January 1st
+  if (month === 0 && day === 1) return true;
+
+  // Add more holiday checks as needed.
+  return false;
+};
+
+
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -54,6 +68,7 @@ export default function PermitRequestForm() {
   const [weekDates, setWeekDates] = useState<Date[]>(
     Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i))
   )
+  const [showValidationDialog, setShowValidationDialog] = useState(false); // Added state for validation dialog
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -146,31 +161,6 @@ export default function PermitRequestForm() {
     }
   }
 
-  if (isLoading) {
-    return <LoadingOverlay />
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex items-center justify-center p-4">
-        <div className="bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-          <div className="mt-4 flex justify-center">
-            <Button 
-              onClick={() => router.push('/')}
-              className="bg-green-500 text-white hover:bg-green-600"
-            >
-              Volver al inicio de sesión
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const handleDateSelect = (date: Date) => {
     setSelectedDates(prev => {
       const isAlreadySelected = prev.some(d => isSameDay(d, date));
@@ -213,8 +203,13 @@ export default function PermitRequestForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (selectedDates.length === 0 || !noveltyType) {
+      setShowValidationDialog(true);
+      return;
+    }
+    
     setIsLoading(true)
-  
     const formData = new FormData(e.target as HTMLFormElement)
     const time = formData.get('time') as string | null
     const description = formData.get('description') as string | null
@@ -231,7 +226,7 @@ export default function PermitRequestForm() {
     selectedFiles.forEach((file, index) => {
       formDataToSend.append(`file${index}`, file)
     })
-  
+    
     try {
       const token = localStorage.getItem('accessToken')
       if (!token) {
@@ -277,6 +272,31 @@ export default function PermitRequestForm() {
       setSelectedDates(prev => prev.slice(0, -1))
     }
     setIsConfirmationDialogOpen(false)
+  }
+
+  if (isLoading) {
+    return <LoadingOverlay />
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 via-white to-green-200 flex items-center justify-center p-4">
+        <div className="bg-white bg-opacity-40 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <div className="mt-4 flex justify-center">
+            <Button 
+              onClick={() => router.push('/')}
+              className="bg-green-500 text-white hover:bg-green-600"
+            >
+              Volver al inicio de sesión
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -364,22 +384,29 @@ export default function PermitRequestForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-green-700">Fechas de solicitud</Label>
+              <Label className="text-green-700">Fechas de solicitud (requerido)</Label>
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                {weekDates.map((date, index) => (
-                  <Button
-                    key={index}
-                    type="button"
-                    variant={selectedDates.some(d => isSameDay(d, date)) ? "default" : "outline"}
-                    className={`p-2 h-auto flex flex-col items-center justify-center ${
-                      selectedDates.some(d => isSameDay(d, date)) ? 'bg-green-500 text-white' : ''
-                    }`}
-                    onClick={() => handleDateSelect(date)}
-                  >
-                    <span className="text-xs">{format(date, 'EEE', { locale: es })}</span>
-                    <span className="text-lg font-bold">{format(date, 'd')}</span>
-                  </Button>
-                ))}
+                {weekDates.map((date, index) => {
+                  const isDateSelected = selectedDates.some(d => isSameDay(d, date));
+                  const isDateHoliday = isHoliday(date);
+                  return (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant={isDateSelected ? "default" : "outline"}
+                      className={`p-2 h-auto flex flex-col items-center justify-center ${
+                        isDateSelected ? 'bg-green-500 text-white' : ''
+                      }`}
+                      onClick={() => handleDateSelect(date)}
+                    >
+                      {isDateHoliday && (
+                        <span className="text-[10px] text-red-500 font-medium -mt-1">Festivo</span>
+                      )}
+                      <span className="text-xs">{format(date, 'EEE', { locale: es })}</span>
+                      <span className="text-lg font-bold">{format(date, 'd')}</span>
+                    </Button>
+                  );
+                })}
               </div>
             </div>
             {(noveltyType === 'cita' || noveltyType === 'audiencia') && (
@@ -389,12 +416,11 @@ export default function PermitRequestForm() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-green-700">Descripción de la solicitud</Label>
+              <Label htmlFor="description" className="text-green-700">Descripción de la solicitud</ Label>
               <Textarea
                 id="description"
                 placeholder="Ingrese el detalle de tu solicitud"
                 className="min-h-[100px] border-green-300 focus:ring-green-500"
-                required
               />
             </div>
             <div className="space-y-2">
@@ -551,6 +577,23 @@ export default function PermitRequestForm() {
               onClick={() => setIsLicenseNotificationOpen(false)} 
               className="bg-green-500 text-white hover:bg-green-600 px-6 py-2 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
             >
+              Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error de Validación</DialogTitle>
+          </DialogHeader>
+          <p>Por favor, asegúrese de completar los siguientes campos obligatorios:</p>
+          <ul className="list-disc list-inside mt-2">
+            {selectedDates.length === 0 && <li>Seleccione al menos una fecha</li>}
+            {!noveltyType && <li>Seleccione el tipo de novedad</li>}
+          </ul>
+          <DialogFooter>
+            <Button onClick={() => setShowValidationDialog(false)} className="bg-green-500 text-white hover:bg-green-600">
               Entendido
             </Button>
           </DialogFooter>
