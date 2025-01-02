@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata = {
   title: 'Link de permisos operacionales',
   description: 'Control de permisos operacionales sao6', 
+  icons: {
+    icon: '/sao6.png', 
+  },
 }
 
 export default function RootLayout({
