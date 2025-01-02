@@ -14,6 +14,8 @@ class UserResponse(BaseModel):
     code: str
     name: str
     phone: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
 
 class UpdatePhoneRequest(BaseModel):
     phone: str
@@ -36,7 +38,6 @@ class EquipmentRequest(BaseModel):
     
 class PhoneUpdate(BaseModel):
     phone: str
-
 
 class NotificationStatusUpdate(BaseModel):
     notification_status: int
@@ -63,3 +64,10 @@ class PermitRequest2(BaseModel):
     
 class ApprovalUpdate(BaseModel):
     approved_by: str = Field(..., min_length=1)
+
+class UserUpdateRequest(BaseModel):
+    code: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None

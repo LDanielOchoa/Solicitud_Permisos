@@ -1,4 +1,4 @@
-from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest, ApprovalUpdate, PermitRequest2
+from schemas import LoginRequest, LoginResponse, UserResponse, PermitRequest, EquipmentRequest, NotificationStatusUpdate, SolicitudResponse, UpdatePhoneRequest, ApprovalUpdate, PermitRequest2, UserResponse, UserResponse
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form, Query
 from auth import create_access_token, verify_password, get_current_user
 from fastapi.responses import JSONResponse, FileResponse
@@ -319,6 +319,33 @@ async def get_users_list():
     finally:
         close_connection(connection)
 
+@app.get("/user/lists")
+
+async def get_users_list():
+
+    connection = create_connection()
+
+    if connection is None:
+
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("SELECT * FROM users")
+
+        users = cursor.fetchall()
+
+        return users
+
+    except Exception as e:
+
+        raise HTTPException(status_code=500, detail=f"Error al obtener usuarios: {str(e)}")
+
+    finally:
+
+        close_connection(connection)
+
 @app.get("/requests")
 def get_requests():
     connection = create_connection()
@@ -393,6 +420,94 @@ def get_requests():
             if request['status'] not in ['pending', 'approved', 'rejected']:
                 request['status'] = 'pending'
                     
+        return permit_requests + equipment_requests
+        
+    finally:
+        cursor.close()
+        close_connection(connection)
+
+@app.get("/requests/{code}")
+def get_requests(code: str):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Fetch permit requests - note that for permits, tipo_novedad is the type of permit
+        cursor.execute(
+            """
+            SELECT 
+                id, 
+                code, 
+                name, 
+                telefono as phone, 
+                fecha as dates, 
+                hora as time, 
+                tipo_novedad as type,
+                tipo_novedad as noveltyType, 
+                description,
+                files, 
+                time_created as createdAt, 
+                solicitud as status,
+                respuesta as reason, 
+                notifications
+            FROM permit_perms
+            WHERE code = %s AND notifications = '0'
+            """,
+            (code,)
+        )
+        permit_requests = cursor.fetchall()
+
+        # Fetch equipment requests - note that for equipment, tipo_novedad is the type itself
+        cursor.execute(
+            """
+            SELECT 
+                id, 
+                code, 
+                name, 
+                tipo_novedad as type,
+                description, 
+                time_created as createdAt,
+                solicitud as status, 
+                respuesta as reason, 
+                notifications, 
+                zona, 
+                comp_am as codeAM, 
+                comp_pm as codePM,
+                turno as shift
+            FROM permit_post
+            WHERE code = %s AND notifications = '0'    
+            """,
+            (code,)
+        )
+        equipment_requests = cursor.fetchall()
+        
+        # Process the requests to ensure consistent format
+        for request in permit_requests + equipment_requests:
+            # Convert any None/NULL values to empty strings or appropriate defaults
+            for key in request:
+                if request[key] is None:
+                    request[key] = ""
+            
+            # Ensure dates are properly formatted if they exist
+            if request.get('dates'):
+                if isinstance(request['dates'], str):
+                    request['dates'] = [request['dates']]
+                elif isinstance(request['dates'], (list, tuple)):
+                    request['dates'] = list(request['dates'])
+            
+            # Convert files to list if it's a string
+            if request.get('files') and isinstance(request['files'], str):
+                try:
+                    request['files'] = request['files'].split(',')
+                except:
+                    request['files'] = [request['files']]
+            
+            # Ensure status is one of: pending, approved, rejected
+            if request['status'] not in ['pending', 'approved', 'rejected']:
+                request['status'] = 'pending'
+        
         return permit_requests + equipment_requests
         
     finally:
@@ -731,6 +846,82 @@ async def get_permit_request(request_id: int):
         return request
     finally:
         close_connection(connection)
+        
+
+
+@app.delete("/users/{code}")
+
+async def delete_user(code: str):
+
+    connection = create_connection()
+
+    if connection is None:
+
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+
+    
+
+    cursor = connection.cursor()
+
+    try:
+
+        cursor.execute("DELETE FROM users WHERE code = %s", (code,))
+
+        connection.commit()
+
+        return {"message": "Usuario eliminado exitosamente"}
+
+    except Exception as e:
+
+        connection.rollback()
+
+        raise HTTPException(status_code=500, detail=f"Error al eliminar usuario: {str(e)}")
+
+    finally:
+
+        close_connection(connection)
+
+
+@app.put("/users/{code}")
+
+async def update_user(code: str, user: UserResponse):
+
+    connection = create_connection()
+
+    if connection is None:
+
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+
+    
+
+    cursor = connection.cursor()
+
+    try:
+
+        cursor.execute("""
+
+            UPDATE users
+
+            SET name = %s, telefone = %s, email = %s, password = %s
+
+            WHERE code = %s
+
+        """, (user.name, user.phone, user.email, user.password, code))
+
+        connection.commit()
+
+        return {"message": "Usuario actualizado exitosamente"}
+
+    except Exception as e:
+
+        connection.rollback()
+
+        raise HTTPException(status_code=500, detail=f"Error al actualizar usuario: {str(e)}")
+
+    finally:
+
+        close_connection(connection)
+
 
 @app.get("/excel")
 async def get_excel():
@@ -772,6 +963,46 @@ async def get_excel():
         )
     finally:
         close_connection(connection)
+
+
+@app.post("/users")
+
+async def add_user(user: UserResponse):
+
+    connection = create_connection()
+
+    if connection is None:
+
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+
+    
+
+    cursor = connection.cursor()
+
+    try:
+
+        cursor.execute("""
+
+            INSERT INTO users (code, name, telefone, email, password)
+
+            VALUES (%s, %s, %s, %s, %s)
+
+        """, (user.code, user.name, user.phone, user.email, user.password))
+
+        connection.commit()
+
+        return {"message": "Usuario agregado exitosamente"}
+
+    except Exception as e:
+
+        connection.rollback()
+
+        raise HTTPException(status_code=500, detail=f"Error al agregar usuario: {str(e)}")
+
+    finally:
+
+        close_connection(connection)
+
 
 if __name__ == "__main__":
     import uvicorn

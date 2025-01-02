@@ -2,16 +2,17 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FileText, BarChart, AlertTriangle, Database } from 'lucide-react'
+import { FileText, BarChart, AlertTriangle, Database, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import PermitsManagement from './permits-management'
 import Indicators from './indicators'
 import PermitRequestForm from './request-form'
 import HistoricalRecords from '../excel/page'
-import { useRouter } from 'next/navigation'  // Cambia esta línea
+import { useRouter } from 'next/navigation' 
+import UserManagementPage from '../user-management/page'
 
 export default function AdminDashboard() {
-  type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history' | 'exit'
+  type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history' | 'users' | 'exit'
   const MotionCard = motion(Card) 
   const [activeSection, setActiveSection] = useState<SectionType>('permits')
 
@@ -54,6 +55,14 @@ export default function AdminDashboard() {
       description: "Registro de solicitudes y respuestas",
       color: "text-blue-600",
       section: 'history' as SectionType
+    },
+    {
+      title: "Gestión de Usuarios",
+      icon: Users,
+      value: "Administrar",
+      description: "Gestione los usuarios del sistema",
+      color: "text-indigo-600",
+      section: 'users' as SectionType
     },
     {
       title: "Salir",
@@ -131,6 +140,7 @@ export default function AdminDashboard() {
           {activeSection === 'indicators' && <Indicators />}
           {activeSection === 'extemporaneous' && <PermitRequestForm />}
           {activeSection === 'history' && <HistoricalRecords />}
+          {activeSection === 'users' && <UserManagementPage />}
         </motion.div>
       </AnimatePresence>
     </div>

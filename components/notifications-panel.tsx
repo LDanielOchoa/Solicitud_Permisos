@@ -45,7 +45,16 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('https://solicitud-permisos.onrender.com/requests');
+  
+      // Obtén el código del localStorage
+      const code = localStorage.getItem('userCode');
+  
+      if (!code) {
+        window.location.href = '/';
+        return;
+      }
+  
+      const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${code}`);
   
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
@@ -53,23 +62,21 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   
       const data = await response.json();
   
-      const transformedNotifications = data
-        .filter((req: any) => req.notifications !== 1) // Filtrar notificaciones con estado 1
-        .map((req: any) => ({
-          id: req.id,
-          uniqueId: `${req.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: req.noveltyType ? 'permiso' : 'equipo',
-          status: req.status || 'pending',
-          date: req.createdAt,
-          description: req.noveltyType 
-            ? `Solicitud de permiso: ${req.noveltyType}`
-            : `Solicitud de equipo: ${req.type}`,
-          reason: req.respuesta,
-          request: req,
-          isRead: false,
-          isHidden: false,
-          notifications: req.notifications,
-        }));
+      const transformedNotifications = data.map((req: any) => ({
+        id: req.id,
+        uniqueId: `${req.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: req.noveltyType ? 'permiso' : 'equipo',
+        status: req.status || 'pending',
+        date: req.createdAt,
+        description: req.noveltyType
+          ? `Solicitud de permiso: ${req.noveltyType}`
+          : `Solicitud de equipo: ${req.type}`,
+        reason: req.respuesta,
+        request: req,
+        isRead: false,
+        isHidden: false,
+        notifications: req.notifications
+      }));
   
       setNotifications(transformedNotifications);
     } catch (error) {
@@ -82,7 +89,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const markAsRead = (notificationId: number) => {
     setNotifications(prev => 
@@ -108,12 +115,13 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
         throw new Error(errorMessage)
       }
   
+      const updatedNotification = await response.json()
+  
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === notificationId
             ? {
                 ...notif,
-                status: newStatus === 1 ? 'approved' : 'rejected',
                 notifications: newStatus,
                 uniqueId: `${notif.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
               }
@@ -121,18 +129,28 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
         )
       )
   
+      console.log('Notification status updated successfully:', updatedNotification)
       toast({
-        title: "Notificación actualizada",
-        description: `La solicitud ha sido ${newStatus === 1 ? 'aprobada' : 'rechazada'}.`,
-        variant: "default",
+        title: "Éxito",
+        description: "El estado de la notificación se ha actualizado correctamente.",
       })
     } catch (error) {
-      console.error('Error updating notification status:', error)
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
-        variant: "destructive",
-      })
+      if (error instanceof Error) {
+        console.error('Error updating notification status:', error.message)
+        toast({
+          title: "Error",
+          description: error.message || "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
+          variant: "destructive",
+        })
+      } else {
+        console.error('Unknown error:', error)
+        toast({
+          title: "Error",
+          description: "Ocurrió un error desconocido. Por favor, intente de nuevo.",
+          variant: "destructive",
+        })
+      }
+      throw error
     }
   }
 
@@ -166,15 +184,22 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
 
   const filteredNotifications = notifications
   .filter(notification => {
-    if (notification.notifications === 1) return false; // Excluir si tiene estado 1
-    if (filter === 'pending') return notification.status === 'pending';
-    if (filter === 'all') return true; // Mostrar todas las notificaciones
-    return notification.type === filter;
+    // Mostrar solo notificaciones con estado `0` y solicitudes aprobadas o rechazadas
+    const validNotification = notification.notifications === 0 && (notification.status === 'approved' || notification.status === 'rejected');
+    if (filter === 'pending') {
+      return notification.status === 'pending';
+    }
+    if (filter === 'all') {
+      return validNotification || notification.status === 'pending';
+    }
+    return notification.type === filter && (validNotification || notification.status === 'pending');
   })
   .sort((a, b) => {
     if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
     return new Date(a.date).getTime() - new Date(b.date).getTime();
-  })
+  });
+
+
   const totalPages = Math.ceil(filteredNotifications.length / notificationsPerPage)
   const currentNotifications = filteredNotifications.slice(
     (currentPage - 1) * notificationsPerPage,
@@ -311,23 +336,18 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
                     }
                   }}
                   onDoubleClick={() => {
-                    if (notification.notifications !== 1) {
+                    if (notification.status !== 'pending') {
                       updateNotificationStatus(notification.id, notification.notifications)
-                        .then(() => {
-                          setNotifications((prev) =>
-                            prev.filter((notif) => notif.id !== notification.id) // Eliminar directamente del estado local
-                          );
-                        })
                         .catch(error => {
-                          console.error('Failed to update notification status:', error);
+                          console.error('Failed to update notification status:', error)
                           toast({
                             title: "Error",
                             description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
                             variant: "destructive",
-                          });
-                        });
+                          })
+                        })
                     }
-                  }}                               
+                  }}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="space-y-1">
@@ -403,4 +423,3 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     </motion.div>
   )
 }
-
