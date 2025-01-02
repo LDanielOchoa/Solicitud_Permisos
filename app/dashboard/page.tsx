@@ -8,6 +8,7 @@ import AnimatedDashboardButton from '../../components/AnimatedDashboardButton'
 import WelcomeBar from '../../components/WelcomeBar'
 import LoadingOverlay from '../../components/loading-overlay'
 import { VideoAlert } from '../../components/VideoAlert'
+import { PersistentVideoMessage } from './PersistentVideoMessage'
 
 export default function Dashboard() {
   const [userName, setUserName] = useState('')
@@ -55,6 +56,8 @@ export default function Dashboard() {
       <div className="container mx-auto max-w-6xl relative z-10">
         <WelcomeBar userName={userName} />
 
+        <PersistentVideoMessage />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,7 +92,7 @@ export default function Dashboard() {
         <>
           <div className="fixed inset-0 bg-black/01 backdrop-blur-md z-40" />
           <div className="fixed inset-0 z-50">
-          <VideoAlert setShowVideo={setShowVideo} />
+            <VideoAlert setShowVideo={setShowVideo} />
           </div>
         </>
       )}
