@@ -129,7 +129,7 @@ export default function HistoricalRecords() {
   
       const workbook = XLSX.read(new Uint8Array(templateArrayBuffer), { type: 'array' });
   
-      const response = await fetch('http://127.0.0.1:8000/excel');
+      const response = await fetch('https://solicitud-permisos.onrender.com/excel');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

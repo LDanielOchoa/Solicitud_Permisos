@@ -179,7 +179,7 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/user/lists')
+      const response = await fetch('https://solicitud-permisos.onrender.com/user/lists')
       if (response.ok) {
         const data = await response.json()
         setUsers(data)
@@ -210,7 +210,7 @@ export function UserManagement() {
     if (!selectedUser) return
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/users/${selectedUser.code}`, {
+      const response = await fetch(`https://solicitud-permisos.onrender.com/users/${selectedUser.code}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ export function UserManagement() {
     if (!selectedUser) return
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/users/${selectedUser.code}`, {
+      const response = await fetch(`https://solicitud-permisos.onrender.com/users/${selectedUser.code}`, {
         method: 'DELETE',
       })
 
@@ -247,7 +247,7 @@ export function UserManagement() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('http://127.0.0.1:8000/users', {
+      const response = await fetch('https://solicitud-permisos.onrender.com/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
