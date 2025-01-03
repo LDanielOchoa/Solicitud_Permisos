@@ -14,6 +14,7 @@ import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 import { UserSelectDialog } from '../../components/user-select-dialog'
 import { SuccessMessage } from '../../components/SuccessMessage'
+import { ErrorModal } from '../../components/ErrorModal'
 
 interface User {
   code: string;
@@ -33,6 +34,8 @@ export default function EquipmentRequestForm() {
   const [usersList, setUsersList] = useState<User[]>([])
   const [isAMDialogOpen, setIsAMDialogOpen] = useState(false)
   const [isPMDialogOpen, setIsPMDialogOpen] = useState(false)
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const router = useRouter()
 
   const zones = [
@@ -57,7 +60,7 @@ export default function EquipmentRequestForm() {
           return
         }
 
-        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('http://127.0.0.1:8000/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -86,7 +89,7 @@ export default function EquipmentRequestForm() {
 
     const fetchUsersList = async () => {
       try {
-        const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
+        const response = await fetch('http://127.0.0.1:8000/users/list')
         if (!response.ok) {
           throw new Error('Error al obtener la lista de usuarios')
         }
@@ -101,13 +104,40 @@ export default function EquipmentRequestForm() {
     fetchUsersList()
   }, [router])
 
+  const validateForm = () => {
+    if (selectedType === 'Turno pareja') {
+      if (!selectedAMUser || !selectedPMUser) {
+        setErrorMessage('Para turno pareja, debes seleccionar tanto el turno AM como el PM.')
+        setIsErrorModalOpen(true)
+        return false
+      }
+      if (selectedAMUser.code === selectedPMUser.code) {
+        setErrorMessage('Para turno pareja, los códigos de AM y PM deben ser diferentes.')
+        setIsErrorModalOpen(true)
+        return false
+      }
+      if (!zone) {
+        setErrorMessage('Para turno pareja, debes seleccionar una zona.')
+        setIsErrorModalOpen(true)
+        return false
+      }
+    }
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setIsSubmitting(true)
+
+    if (!validateForm()) {
+      setIsSubmitting(false)
+      return
+    }
 
     const formElement = e.target as HTMLFormElement
     const formData = {
-      type: formElement.type.value,
+      type: selectedType,
       description: formElement.description.value,
       zona: (selectedType === 'Turno pareja' || selectedType === 'Tabla partida') ? zone : undefined,
       codeAM: selectedAMUser?.code,
@@ -121,7 +151,7 @@ export default function EquipmentRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
 
-      const response = await fetch('https://solicitud-permisos.onrender.com/equipment-request', {
+      const response = await fetch('http://127.0.0.1:8000/equipment-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,6 +178,22 @@ export default function EquipmentRequestForm() {
     } finally {
       setIsSubmitting(false)
       setTimeout(() => setIsSuccess(false), 5000)
+    }
+  }
+
+  const handleAMUserSelect = (user: User) => {
+    setSelectedAMUser(user)
+    if (selectedType === 'Turno pareja' && selectedPMUser && user.code === selectedPMUser.code) {
+      setErrorMessage('Los códigos de AM y PM deben ser diferentes.')
+      setIsErrorModalOpen(true)
+    }
+  }
+
+  const handlePMUserSelect = (user: User) => {
+    setSelectedPMUser(user)
+    if (selectedType === 'Turno pareja' && selectedAMUser && user.code === selectedAMUser.code) {
+      setErrorMessage('Los códigos de AM y PM deben ser diferentes.')
+      setIsErrorModalOpen(true)
     }
   }
 
@@ -330,7 +376,7 @@ export default function EquipmentRequestForm() {
       <UserSelectDialog
         open={isAMDialogOpen}
         onOpenChange={setIsAMDialogOpen}
-        onSelect={setSelectedAMUser}
+        onSelect={handleAMUserSelect}
         users={usersList}
         currentUser={userData}
         title="Seleccionar Usuario AM"
@@ -339,7 +385,7 @@ export default function EquipmentRequestForm() {
       <UserSelectDialog
         open={isPMDialogOpen}
         onOpenChange={setIsPMDialogOpen}
-        onSelect={setSelectedPMUser}
+        onSelect={handlePMUserSelect}
         users={usersList}
         currentUser={userData}
         title="Seleccionar Usuario PM"
@@ -348,6 +394,11 @@ export default function EquipmentRequestForm() {
       <SuccessMessage 
         isVisible={isSuccess} 
         onClose={() => setIsSuccess(false)} 
+      />
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        message={errorMessage}
       />
     </div>
   )

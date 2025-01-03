@@ -19,6 +19,13 @@ import LoadingOverlay from '../../components/loading-overlay'
 type User = {
   code: string;
   name: string;
+  role?: string;
+}
+
+type UserData = {
+  code: string;
+  name: string;
+  phone: string;
 }
 
 export default function PermitRequestForm() {
@@ -26,7 +33,7 @@ export default function PermitRequestForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [noveltyType, setNoveltyType] = useState('')
-  const [userData, setUserData] = useState({ code: '', name: '', phone: '' })
+  const [userData, setUserData] = useState<UserData>({ code: '', name: '', phone: '' })
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
@@ -39,7 +46,7 @@ export default function PermitRequestForm() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
+      const response = await fetch('http://127.0.0.1:8000/users/list')
       if (!response.ok) {
         throw new Error('Error al obtener la lista de usuarios')
       }
@@ -54,12 +61,17 @@ export default function PermitRequestForm() {
     setIsCodePopoverOpen(false)
     setIsLoading(true)
     try {
-      const response = await fetch(`https://solicitud-permisos.onrender.com/user/${selectedCode}`)
+      const response = await fetch(`http://127.0.0.1:8000/user/${selectedCode}`)
       if (!response.ok) {
         throw new Error('Error al obtener datos del usuario')
       }
       const data = await response.json()
-      setUserData({ code: data.code, name: data.name, phone: data.phone || '' })
+      
+      setUserData({ 
+        code: data.code, 
+        name: data.name, 
+        phone: data.phone || '',
+      })
     } catch (error) {
       console.error('Error fetching user data:', error)
     } finally {
@@ -108,7 +120,7 @@ export default function PermitRequestForm() {
     }
 
     try {
-      const response = await fetch('https://solicitud-permisos.onrender.com/new-permit-request', {
+      const response = await fetch('http://127.0.0.1:8000/new-permit-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,8 +135,7 @@ export default function PermitRequestForm() {
       const result = await response.json()
       console.log("New permit request result:", result)
 
-      // Actualizar la aprobación
-      const approvalResponse = await fetch(`https://solicitud-permisos.onrender.com/update-approval/${result.id}`, {
+      const approvalResponse = await fetch(`http://127.0.0.1:8000/update-approval/${result.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +156,6 @@ export default function PermitRequestForm() {
 
       setIsSuccess(true)
 
-      // Resetear el formulario
       e.currentTarget.reset()
       setSelectedDates([])
       setNoveltyType('')
@@ -155,8 +165,6 @@ export default function PermitRequestForm() {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
-
-      // Resetear el éxito después de 3 segundos
       setTimeout(() => setIsSuccess(false), 3000)
     }
   }
@@ -171,6 +179,24 @@ export default function PermitRequestForm() {
     }
     setIsConfirmationDialogOpen(false)
   }
+
+  const supervisors = [
+    { code: "0001", name: "Manuel Lopez" },
+    { code: "0002", name: "Antonio Rubiano" },
+    { code: "0003", name: "Enrique Fajardo" },
+    { code: "0004", name: "Mario Valle" },
+    { code: "0005", name: "Oliver Barbosa" },
+  ]
+
+  const filteredSupervisors = localStorage.getItem('userRole') === 'testers'
+    ? supervisors.filter(supervisor => {
+      const userCode = localStorage.getItem('userCode')
+      if (userCode === '0001') return supervisor.name === "Manuel Lopez"
+      if (userCode === '0002') return supervisor.name === "Antonio Rubiano"
+      return false
+    })
+    : supervisors
+
   
   return (
     <div className="min-h-screen via-white to-green-200 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -254,7 +280,6 @@ export default function PermitRequestForm() {
                 required 
                 onValueChange={(value) => {
                   setNoveltyType(value)
-                  // setError('')
                   setHasShownLicenseNotification(false)
                 }}
                 value={noveltyType}
@@ -315,9 +340,11 @@ export default function PermitRequestForm() {
                   <SelectValue placeholder="Seleccione quién acepta" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Enrique Fajardo">Enrique Fajardo</SelectItem>
-                  <SelectItem value="Mario Valle">Mario Valle </SelectItem>
-                  <SelectItem value="Oliver Barbosa">Oliver Barbosa</SelectItem>
+                  {filteredSupervisors.map((supervisor) => (
+                    <SelectItem key={supervisor.code} value={supervisor.name}>
+                      {supervisor.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

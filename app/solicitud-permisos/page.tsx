@@ -50,7 +50,6 @@ const isHoliday = (date: Date): boolean => {
   return false;
 };
 
-
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -68,7 +67,7 @@ export default function PermitRequestForm() {
   const [weekDates, setWeekDates] = useState<Date[]>(
     Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i))
   )
-  const [showValidationDialog, setShowValidationDialog] = useState(false); // Added state for validation dialog
+  const [showValidationDialog, setShowValidationDialog] = useState(false)
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
@@ -82,7 +81,7 @@ export default function PermitRequestForm() {
           return
         }
 
-        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('http://127.0.0.1:8000/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -136,7 +135,7 @@ export default function PermitRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
 
-      const response = await fetch('https://solicitud-permisos.onrender.com/update-phone', {
+      const response = await fetch('http://127.0.0.1:8000/update-phone', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,6 +161,10 @@ export default function PermitRequestForm() {
   }
 
   const handleDateSelect = (date: Date) => {
+    if (noveltyType === 'semanaAM' || noveltyType === 'semanaPM') {
+      return; // Do nothing if semana AM or PM is selected
+    }
+
     setSelectedDates(prev => {
       const isAlreadySelected = prev.some(d => isSameDay(d, date));
       let newDates;
@@ -204,7 +207,7 @@ export default function PermitRequestForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (selectedDates.length === 0 || !noveltyType) {
+    if ((selectedDates.length === 0 && noveltyType !== 'semanaAM' && noveltyType !== 'semanaPM') || !noveltyType) {
       setShowValidationDialog(true);
       return;
     }
@@ -233,7 +236,7 @@ export default function PermitRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
   
-      const response = await fetch('https://solicitud-permisos.onrender.com/permit-request', {
+      const response = await fetch('http://127.0.0.1:8000/permit-request', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -248,7 +251,7 @@ export default function PermitRequestForm() {
       setIsSuccess(true)
       // Resetear el formulario
       const form = e.target as HTMLFormElement
-      form.reset()  // Aquí verificamos que `e.target` es un formulario
+      form.reset()
   
       setSelectedDates([])
       setSelectedFiles([])
@@ -318,7 +321,7 @@ export default function PermitRequestForm() {
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="text-3xl sm:text-4xl font-bold text-green-700 text-center mb-6 sm:mb-8"
           >
-            Solicitud de Permiso
+            Solicitud de Permisos
           </motion.h1>
 
           <div className="space-y-6">
@@ -358,12 +361,11 @@ export default function PermitRequestForm() {
               <Select 
                 required 
                 onValueChange={(value) => {
-                  if (value === 'descanso' && selectedDates.length >= 2) {
-                    setIsErrorDialogOpen(false);
-                  } else {
-                    setNoveltyType(value)
-                    setError('')
-                    setHasShownLicenseNotification(false)
+                  setNoveltyType(value)
+                  setError('')
+                  setHasShownLicenseNotification(false)
+                  if (value === 'semanaAM' || value === 'semanaPM') {
+                    setSelectedDates([])
                   }
                 }}
                 value={noveltyType}
@@ -384,11 +386,12 @@ export default function PermitRequestForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-green-700">Fechas de solicitud (requerido)</Label>
+              <Label className="text-green-700">Fechas de solicitud</Label>
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {weekDates.map((date, index) => {
                   const isDateSelected = selectedDates.some(d => isSameDay(d, date));
                   const isDateHoliday = isHoliday(date);
+                  const isDisabled = noveltyType === 'semanaAM' || noveltyType === 'semanaPM';
                   return (
                     <Button
                       key={index}
@@ -396,8 +399,9 @@ export default function PermitRequestForm() {
                       variant={isDateSelected ? "default" : "outline"}
                       className={`p-2 h-auto flex flex-col items-center justify-center ${
                         isDateSelected ? 'bg-green-500 text-white' : ''
-                      }`}
+                      } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={() => handleDateSelect(date)}
+                      disabled={isDisabled}
                     >
                       {isDateHoliday && (
                         <span className="text-[10px] text-red-500 font-medium -mt-1">Festivo</span>
@@ -408,6 +412,11 @@ export default function PermitRequestForm() {
                   );
                 })}
               </div>
+              {(noveltyType === 'semanaAM' || noveltyType === 'semanaPM') && (
+                <p className="text-sm text-green-600 mt-2">
+                  No es necesario seleccionar fechas para Semana A.M. o Semana P.M.
+                </p>
+              )}
             </div>
             {(noveltyType === 'cita' || noveltyType === 'audiencia') && (
               <div className="space-y-2">
@@ -416,7 +425,7 @@ export default function PermitRequestForm() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-green-700">Descripción de la solicitud</ Label>
+              <Label htmlFor="description" className="text-green-700">Descripción de la solicitud</Label>
               <Textarea
                 id="description"
                 placeholder="Ingrese el detalle de tu solicitud"
@@ -589,7 +598,7 @@ export default function PermitRequestForm() {
           </DialogHeader>
           <p>Por favor, asegúrese de completar los siguientes campos obligatorios:</p>
           <ul className="list-disc list-inside mt-2">
-            {selectedDates.length === 0 && <li>Seleccione al menos una fecha</li>}
+            {selectedDates.length === 0 && noveltyType !== 'semanaAM' && noveltyType !== 'semanaPM' && <li>Seleccione al menos una fecha</li>}
             {!noveltyType && <li>Seleccione el tipo de novedad</li>}
           </ul>
           <DialogFooter>

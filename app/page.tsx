@@ -43,7 +43,7 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch('https://solicitud-permisos.onrender.com/auth/login', {
+      const response = await fetch('http://127.0.0.1:8000/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,7 +58,7 @@ export default function LoginPage() {
         localStorage.setItem('userRole', data.role)
         localStorage.setItem('userCode', code)
         
-        if (data.role === 'admin') {
+        if (data.role === 'admin' || data.role === 'testers') {
           router.push('/dashboard-admin-requests')
         } else {
           router.push('/dashboard')

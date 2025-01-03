@@ -1,6 +1,6 @@
-'use client'  // Marca este archivo como un Client Component
+'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, BarChart, AlertTriangle, Database, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -15,8 +15,14 @@ export default function AdminDashboard() {
   type SectionType = 'permits' | 'indicators' | 'extemporaneous' | 'history' | 'users' | 'exit'
   const MotionCard = motion(Card) 
   const [activeSection, setActiveSection] = useState<SectionType>('permits')
+  const [userRole, setUserRole] = useState<string>('')
 
-  const router = useRouter()  // useRouter de 'next/navigation'
+  const router = useRouter()
+
+  useEffect(() => {
+    const role = localStorage.getItem('userRole')
+    setUserRole(role || '')
+  }, [])
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -82,6 +88,10 @@ export default function AdminDashboard() {
     }
   }
 
+  const filteredStats = userRole === 'testers' 
+    ? stats.filter(stat => ['extemporaneous', 'exit'].includes(stat.section))
+    : stats
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <motion.div
@@ -92,7 +102,7 @@ export default function AdminDashboard() {
       >
         <h1 className="text-3xl font-bold text-center mb-2">Panel de Administración</h1>
         <p className="text-center text-muted-foreground">
-          Gestione solicitudes y visualice estadísticas del sistema
+          {userRole === 'testers' ? 'Gestione permisos extemporáneos' : 'Gestione solicitudes y visualice estadísticas del sistema'}
         </p>
       </motion.div>
       
@@ -108,12 +118,12 @@ export default function AdminDashboard() {
         }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8"
       >
-        {stats.map((stat) => (
+        {filteredStats.map((stat) => (
           <MotionCard
             key={stat.title}
             variants={cardVariants}
             className="cursor-pointer transition-colors hover:bg-accent"
-            onClick={() => handleSectionChange(stat.section)} // Cambiar a la función de redirección
+            onClick={() => handleSectionChange(stat.section)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium">{stat.title}</CardTitle>
@@ -136,13 +146,14 @@ export default function AdminDashboard() {
           transition={{ duration: 0.3 }}
           className="rounded-lg border bg-card"
         >
-          {activeSection === 'permits' && <PermitsManagement />}
-          {activeSection === 'indicators' && <Indicators />}
+          {activeSection === 'permits' && userRole !== 'testers' && <PermitsManagement />}
+          {activeSection === 'indicators' && userRole !== 'testers' && <Indicators />}
           {activeSection === 'extemporaneous' && <PermitRequestForm />}
-          {activeSection === 'history' && <HistoricalRecords />}
-          {activeSection === 'users' && <UserManagementPage />}
+          {activeSection === 'history' && userRole !== 'testers' && <HistoricalRecords />}
+          {activeSection === 'users' && userRole !== 'testers' && <UserManagementPage />}
         </motion.div>
       </AnimatePresence>
     </div>
   )
 }
+
