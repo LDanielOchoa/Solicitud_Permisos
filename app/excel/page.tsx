@@ -115,7 +115,6 @@ export default function HistoricalRecords() {
       'Código': record.code,
       'Nombre': record.name,
       'Teléfono': record.telefono,
-      'Tipo': record.tipo,
       'Novedad': record.novedad,
       'Hora': record.hora,
       'Fecha Inicio': record.fecha_inicio,
@@ -261,7 +260,6 @@ export default function HistoricalRecords() {
                 <TableHead>Código</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Teléfono</TableHead>
-                <TableHead>Tipo</TableHead>
                 <TableHead>Novedad</TableHead>
                 <TableHead>Fecha Inicio</TableHead>
                 <TableHead>Fecha Fin</TableHead>
@@ -289,7 +287,6 @@ export default function HistoricalRecords() {
                     <TableCell>{record.code}</TableCell>
                     <TableCell>{record.name}</TableCell>
                     <TableCell>{record.telefono}</TableCell>
-                    <TableCell>{record.tipo}</TableCell>
                     <TableCell>{record.novedad}</TableCell>
                     <TableCell>{record.fecha_inicio}</TableCell>
                     <TableCell>{record.fecha_fin}</TableCell>

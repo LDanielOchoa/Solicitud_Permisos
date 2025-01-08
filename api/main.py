@@ -953,14 +953,19 @@ async def get_excel():
         cursor.execute("""
             SELECT 
                 code,
+                name,
+                telefono,
                 MIN(fecha) as fecha_inicio,
                 MAX(fecha) as fecha_fin,
-                tipo_novedad as novedad
+                tipo_novedad as novedad,
+                description,
+                respuesta
             FROM permit_perms
             WHERE solicitud = 'approved'
                 AND tipo_novedad IN ('descanso', 'licencia')
-            GROUP BY code, tipo_novedad
-            ORDER BY MIN(fecha)
+            GROUP BY code, name, telefono, tipo_novedad, description, respuesta
+            ORDER BY MIN(fecha);
+
         """)
         records = cursor.fetchall()
         
