@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Bell, Calendar, Filter, SortDesc, CheckCheck, Loader2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/components/ui/use-toast"
+import NotificationItem from './NotificationItem'
+import { useMediaQuery } from './use-media-query'
 
 interface Notification {
   id: number
@@ -37,31 +38,21 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const notificationsPerPage = 5
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
-  useEffect(() => {
-    fetchNotifications()
-  }, [])
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
-      setIsLoading(true);
-  
-      // Obtén el código del localStorage
-      const code = localStorage.getItem('userCode');
-  
+      setIsLoading(true)
+      const code = localStorage.getItem('userCode')
       if (!code) {
-        window.location.href = '/';
-        return;
+        window.location.href = '/'
+        return
       }
-  
-      const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${code}`);
-  
+      const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${code}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        throw new Error('Failed to fetch notifications')
       }
-  
-      const data = await response.json();
-  
+      const data = await response.json()
       const transformedNotifications = data.map((req: any) => ({
         id: req.id,
         uniqueId: `${req.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -76,47 +67,45 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
         isRead: false,
         isHidden: false,
         notifications: req.notifications
-      }));
-  
-      setNotifications(transformedNotifications);
+      }))
+      setNotifications(transformedNotifications)
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications:', error)
       toast({
         title: "Error",
         description: "No se pudieron cargar las notificaciones. Por favor, intente de nuevo más tarde.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };  
+  }, [])
 
-  const markAsRead = (notificationId: number) => {
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  const markAsRead = useCallback((notificationId: number) => {
     setNotifications(prev => 
       prev.map(notif => 
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     )
-  }
+  }, [])
 
-  const updateNotificationStatus = async (notificationId: number, currentStatus: number) => {
+  const updateNotificationStatus = useCallback(async (notificationId: number, currentStatus: number) => {
     try {
       const newStatus = currentStatus === 0 ? 1 : 2
-  
       const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${notificationId}/notifications`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notification_status: newStatus }),
       })
-  
       if (!response.ok) {
         const errorData = await response.json()
-        const errorMessage = errorData.detail || 'Error al actualizar el estado de la notificación'
-        throw new Error(errorMessage)
+        throw new Error(errorData.detail || 'Error al actualizar el estado de la notificación')
       }
-  
-      const updatedNotification = await response.json()
-  
+      await response.json()
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === notificationId
@@ -128,46 +117,32 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
             : notif
         )
       )
-  
-      console.log('Notification status updated successfully:', updatedNotification)
       toast({
         title: "Éxito",
         description: "El estado de la notificación se ha actualizado correctamente.",
       })
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Error updating notification status:', error.message)
-        toast({
-          title: "Error",
-          description: error.message || "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
-          variant: "destructive",
-        })
-      } else {
-        console.error('Unknown error:', error)
-        toast({
-          title: "Error",
-          description: "Ocurrió un error desconocido. Por favor, intente de nuevo.",
-          variant: "destructive",
-        })
-      }
+      console.error('Error updating notification status:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Ocurrió un error desconocido. Por favor, intente de nuevo.",
+        variant: "destructive",
+      })
       throw error
     }
-  }
+  }, [])
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       setIsLoading(true)
       const notificationsToUpdate = notifications.filter(n => n.notifications === 0 && n.status !== 'pending')
-      
       for (const notification of notificationsToUpdate) {
         await updateNotificationStatus(notification.id, 0)
       }
-
       toast({
         title: "Éxito",
         description: "Todas las notificaciones han sido marcadas como leídas.",
       })
-
       onMarkAllAsRead()
       await fetchNotifications()
     } catch (error) {
@@ -180,25 +155,23 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [notifications, updateNotificationStatus, onMarkAllAsRead, fetchNotifications])
 
   const filteredNotifications = notifications
-  .filter(notification => {
-    // Mostrar solo notificaciones con estado `0` y solicitudes aprobadas o rechazadas
-    const validNotification = notification.notifications === 0 && (notification.status === 'approved' || notification.status === 'rejected');
-    if (filter === 'pending') {
-      return notification.status === 'pending';
-    }
-    if (filter === 'all') {
-      return validNotification || notification.status === 'pending';
-    }
-    return notification.type === filter && (validNotification || notification.status === 'pending');
-  })
-  .sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
-
+    .filter(notification => {
+      const validNotification = notification.notifications === 0 && (notification.status === 'approved' || notification.status === 'rejected')
+      if (filter === 'pending') {
+        return notification.status === 'pending'
+      }
+      if (filter === 'all') {
+        return validNotification || notification.status === 'pending'
+      }
+      return notification.type === filter && (validNotification || notification.status === 'pending')
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime()
+      return new Date(a.date).getTime() - new Date(b.date).getTime()
+    })
 
   const totalPages = Math.ceil(filteredNotifications.length / notificationsPerPage)
   const currentNotifications = filteredNotifications.slice(
@@ -206,38 +179,12 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     currentPage * notificationsPerPage
   )
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'approved':
-        return 'bg-green-100 text-green-800 border-green-300'
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Pendiente'
-      case 'approved':
-        return 'Aprobada'
-      case 'rejected':
-        return 'Rechazada'
-      default:
-        return status
-    }
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed top-20 right-4 w-[95vw] md:w-[480px] bg-green-50 shadow-xl rounded-lg overflow-hidden border border-green-200 max-h-[90vh]"
+      className="fixed inset-0 md:inset-auto md:top-20 md:right-4 w-full md:w-[480px] bg-green-50 shadow-xl rounded-lg overflow-hidden border border-green-200 max-h-[100vh] md:max-h-[90vh] flex flex-col"
     >
       <CardHeader className="border-b border-green-200 px-6 py-4 bg-green-100">
         <div className="flex justify-between items-center">
@@ -246,15 +193,17 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
             <CardTitle className="text-green-800">Notificaciones</CardTitle>
           </div>
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="text-sm hidden md:flex text-green-700 hover:text-green-900 hover:bg-green-200"
-            >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Marcar todo como leído
-            </Button>
+            {!isMobile && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                className="text-sm text-green-700 hover:text-green-900 hover:bg-green-200"
+              >
+                <CheckCheck className="w-4 h-4 mr-2" />
+                Marcar todo como leído
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={onClose} className="text-green-700 hover:text-green-900 hover:bg-green-200">
               <X className="h-5 w-5" />
             </Button>
@@ -293,7 +242,7 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
         </div>
       </div>
 
-      <ScrollArea className="h-[400px]">
+      <ScrollArea className="flex-grow">
         <div className="p-2">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8 text-green-600">
@@ -308,75 +257,12 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
           ) : (
             <AnimatePresence>
               {currentNotifications.map((notification) => (
-                <motion.div
+                <NotificationItem
                   key={notification.uniqueId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className={`
-                    relative p-4 rounded-lg border transition-all cursor-pointer
-                    ${notification.isRead ? 'opacity-70' : ''}
-                    ${getStatusColor(notification.status)}
-                    hover:shadow-md
-                  `}
-                  onClick={() => {
-                    setSelectedNotification(notification)
-                    markAsRead(notification.id)
-                    if (notification.notifications === 0 && notification.status !== 'pending') {
-                      updateNotificationStatus(notification.id, notification.notifications)
-                        .catch(error => {
-                          console.error('Failed to update notification status:', error)
-                          toast({
-                            title: "Error",
-                            description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
-                            variant: "destructive",
-                          })
-                        })
-                    }
-                  }}
-                  onDoubleClick={() => {
-                    if (notification.status !== 'pending') {
-                      updateNotificationStatus(notification.id, notification.notifications)
-                        .catch(error => {
-                          console.error('Failed to update notification status:', error)
-                          toast({
-                            title: "Error",
-                            description: "No se pudo actualizar el estado de la notificación. Por favor, intente de nuevo.",
-                            variant: "destructive",
-                          })
-                        })
-                    }
-                  }}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{notification.description}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(notification.date).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <Badge className={getStatusColor(notification.status)}>
-                      {getStatusText(notification.status)}
-                    </Badge>
-                  </div>
-                  {notification.reason && (
-                    <div className="mt-2 text-sm">
-                      <strong>Razón:</strong> {notification.reason}
-                    </div>
-                  )}
-                  {!notification.isRead && notification.status !== 'pending' && (
-                    <motion.div
-                      className="absolute top-2 right-2"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    >
-                      <span className="flex h-2 w-2 rounded-full bg-green-600" />
-                    </motion.div>
-                  )}
-                </motion.div>
+                  notification={notification}
+                  onMarkAsRead={markAsRead}
+                  onUpdateStatus={updateNotificationStatus}
+                />
               ))}
             </AnimatePresence>
           )}
@@ -420,6 +306,21 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
           </div>
         </div>
       )}
+
+      {isMobile && (
+        <div className="border-t border-green-200 p-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            className="w-full text-sm text-green-700 hover:text-green-900 hover:bg-green-200"
+          >
+            <CheckCheck className="w-4 h-4 mr-2" />
+            Marcar todo como leído
+          </Button>
+        </div>
+      )}
     </motion.div>
   )
 }
+

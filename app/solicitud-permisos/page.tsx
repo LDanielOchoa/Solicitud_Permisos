@@ -18,19 +18,13 @@ import LoadingOverlay from '../../components/loading-overlay'
 import { SuccessMessage } from '../../components/SuccessMessage'
 
 const getCurrentWeekDates = () => {
-  const today = new Date()
-  const baseDate = new Date(2025, 0, 13) // January 13, 2024 (Monday)
+  const now = new Date()
+  const currentDay = now.getDay()
+  const currentHour = now.getHours()
   
-  // If we're before January 13, 2024, show January 13-19
-  if (today < baseDate) {
-    return baseDate
-  }
+  const baseDate = new Date(2025, 0, 13) 
   
-  const wednesday = setHours(startOfWeek(today, { weekStartsOn: 3 }), 12)
-  const nextWednesday = addWeeks(wednesday, 1)
-  
-  // If we're after Wednesday 12 PM, show next week's dates
-  if (isAfter(today, wednesday) && isBefore(today, nextWednesday)) {
+  if ((currentDay === 3 && currentHour >= 12)) {
     return addWeeks(baseDate, 1)
   }
   
@@ -38,15 +32,12 @@ const getCurrentWeekDates = () => {
 }
 
 const isHoliday = (date: Date): boolean => {
-  // Add your holiday check logic here.  This is a placeholder.
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
 
-  // Example: Check if it's January 1st
   if (month === 0 && day === 1) return true;
 
-  // Add more holiday checks as needed.
   return false;
 };
 
@@ -64,9 +55,7 @@ export default function PermitRequestForm() {
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
-  const [weekDates, setWeekDates] = useState<Date[]>(
-    Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i))
-  )
+  const [weekDates, setWeekDates] = useState<Date[]>([])
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const router = useRouter()
   const phoneInputRef = useRef<HTMLInputElement>(null)
@@ -113,11 +102,12 @@ export default function PermitRequestForm() {
 
   useEffect(() => {
     const updateDates = () => {
-      setWeekDates(Array.from({ length: 7 }, (_, i) => addDays(getCurrentWeekDates(), i)))
+      const startDate = getCurrentWeekDates()
+      setWeekDates(Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(startDate, { weekStartsOn: 1 }), i)))
     }
 
-    const timer = setInterval(updateDates, 60000) // Check every minute
     updateDates() // Initial update
+    const timer = setInterval(updateDates, 60000) // Check every minute
 
     return () => clearInterval(timer)
   }, [])
@@ -195,7 +185,8 @@ export default function PermitRequestForm() {
       const newFiles = Array.from(e.target.files)
       setSelectedFiles(prevFiles => {
         const updatedFiles = [...prevFiles, ...newFiles]
-        return updatedFiles.slice(0, 5) // Limit to 5 files
+        console.log("Selected files:", updatedFiles); 
+        return updatedFiles.slice(0, 5) 
       })
     }
   }
@@ -205,7 +196,7 @@ export default function PermitRequestForm() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     
     if ((selectedDates.length === 0 && noveltyType !== 'semanaAM' && noveltyType !== 'semanaPM') || !noveltyType) {
       setShowValidationDialog(true);
@@ -213,21 +204,20 @@ export default function PermitRequestForm() {
     }
     
     setIsLoading(true)
-    const formData = new FormData(e.target as HTMLFormElement)
-    const time = formData.get('time') as string | null
-    const description = formData.get('description') as string | null
-  
-    const formDataToSend = new FormData()
-    formDataToSend.append('code', userData.code)
-    formDataToSend.append('name', userData.name)
-    formDataToSend.append('phone', userData.phone)
-    formDataToSend.append('dates', JSON.stringify(selectedDates.map(date => format(date, 'yyyy-MM-dd'))))
-    formDataToSend.append('noveltyType', noveltyType)
-    formDataToSend.append('time', time || '')
-    formDataToSend.append('description', description || '')
+    const formData = new FormData();
+    formData.append('code', userData.code)
+    formData.append('name', userData.name)
+    formData.append('phone', userData.phone)
+    formData.append('dates', JSON.stringify(selectedDates.map(date => format(date, 'yyyy-MM-dd'))))
+    formData.append('noveltyType', noveltyType)
+    formData.append('time', (e.target as HTMLFormElement).time?.value || '')
+    formData.append('description', (e.target as HTMLFormElement).description?.value || '')
     
+    console.log("FormData before appending files:", formData)
+
     selectedFiles.forEach((file, index) => {
-      formDataToSend.append(`file${index}`, file)
+      console.log(`Appending file ${index}:`, file.name); 
+      formData.append(`file${index}`, file)
     })
     
     try {
@@ -235,15 +225,20 @@ export default function PermitRequestForm() {
       if (!token) {
         throw new Error('No se encontró el token de acceso')
       }
-  
+      
+      console.log("Sending request to server...")
       const response = await fetch('https://solicitud-permisos.onrender.com/permit-request', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        body: formDataToSend,
+        body: formData,
       })
-  
+      
+      console.log("Response status:", response.status)
+      const responseData = await response.json()
+      console.log("Response data:", responseData)
+
       if (!response.ok) {
         throw new Error('Error al enviar la solicitud')
       }

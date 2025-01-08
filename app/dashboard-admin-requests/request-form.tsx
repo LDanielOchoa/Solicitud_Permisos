@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Calendar } from 'lucide-react'
-import { format, addDays, isSameDay, startOfWeek } from 'date-fns'
+import { format, addDays, subDays, isSameDay, startOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -169,7 +169,13 @@ export default function PermitRequestForm() {
     }
   }
 
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(new Date()), i))
+  const generateDates = () => {
+    const today = startOfDay(new Date())
+    const twoWeeksAgo = subDays(today, 14)
+    return Array.from({ length: 28 }, (_, i) => addDays(twoWeeksAgo, i))
+  }
+
+  const dates = generateDates()
 
   const handleConfirmation = (confirmed: boolean) => {
     if (confirmed) {
@@ -301,21 +307,23 @@ export default function PermitRequestForm() {
             </div>
             <div className="space-y-2">
               <Label className="text-green-700">Fechas de solicitud</Label>
-              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                {weekDates.map((date, index) => (
-                  <Button
-                  key={index}
-                  type="button"
-                  variant={selectedDates.some(d => isSameDay(d, date)) ? "default" : "outline"}
-                  className={`p-2 h-auto flex flex-col items-center justify-center ${
-                    selectedDates.some(d => isSameDay(d, date)) ? 'bg-green-500 text-white' : ''
-                  }`}
-                  onClick={() => handleDateSelect(date)}
-                  >
-                  <span className="text-xs">{format(addDays(date, 1), 'EEE', { locale: es })}</span>
-                  <span className="text-lg font-bold">{format(addDays(date, 1), 'd')}</span>
-                  </Button>
-                ))}
+              <div className="overflow-x-auto pb-2">
+                <div className="flex space-x-2" style={{ width: 'max-content' }}>
+                  {dates.map((date, index) => (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant={selectedDates.some(d => isSameDay(d, date)) ? "default" : "outline"}
+                      className={`p-2 h-auto flex flex-col items-center justify-center min-w-[60px] ${
+                        selectedDates.some(d => isSameDay(d, date)) ? 'bg-green-500 text-white' : ''
+                      } ${isSameDay(date, new Date()) ? 'border-2 border-blue-500' : ''}`}
+                      onClick={() => handleDateSelect(date)}
+                    >
+                      <span className="text-xs">{format(date, 'EEE', { locale: es })}</span>
+                      <span className="text-lg font-bold">{format(date, 'd')}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
             {(noveltyType === 'cita' || noveltyType === 'audiencia') && (

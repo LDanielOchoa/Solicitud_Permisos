@@ -61,16 +61,27 @@ export default function HistoricalRecords() {
 
   const fetchRecords = useCallback(async () => {
     try {
-      const response = await fetch(`/excel?week=${weekFilter}`)
-      const data = await response.json()
-      setRecords(data)
-      setFilteredRecords(data)
-      setLoading(false)
+      const response = await fetch(`https://solicitud-permisos.onrender.com/excel?week=${weekFilter}`);
+      const contentType = response.headers.get("content-type");
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        setRecords(data);
+        setFilteredRecords(data);
+      } else {
+        throw new Error("Response is not JSON");
+      }
+  
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching records:', error)
-      setLoading(false)
+      console.error("Error fetching records:", error);
+      setLoading(false);
     }
-  }, [weekFilter])
+  }, [weekFilter]);  
 
   useEffect(() => {
     fetchRecords()

@@ -7,10 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from datetime import timedelta, datetime
 from typing import List, Optional
+import logging
 import mimetypes
 import aiofiles
-import shutil
-import uuid
 import json
 import os
 
@@ -19,6 +18,8 @@ app = FastAPI()
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 mimetypes.add_type('application/pdf', '.pdf')
 mimetypes.add_type('image/jpeg', '.jpg')
@@ -97,8 +98,13 @@ async def create_permit_request(
     files: List[UploadFile] = File([]),
     current_user: dict = Depends(get_current_user)
 ):
+    logger.info(f"Received permit request for user: {code}")
+    logger.debug(f"Request data: code={code}, name={name}, phone={phone}, dates={dates}, noveltyType={noveltyType}, time={time}, description={description}")
+    logger.debug(f"Number of files received: {len(files)}")
+
     connection = create_connection()
     if connection is None:
+        logger.error("Failed to create database connection")
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
 
     cursor = connection.cursor()
@@ -108,9 +114,11 @@ async def create_permit_request(
         # Handle file uploads first
         if files:
             for file in files:
+                logger.info(f"Processing file: {file.filename}")
                 # Validate file type
                 content_type = file.content_type
                 if content_type not in ['image/jpeg', 'image/png', 'application/pdf']:
+                    logger.warning(f"Invalid file type: {content_type}")
                     raise HTTPException(
                         status_code=400,
                         detail=f"Tipo de archivo no permitido: {content_type}"
@@ -138,40 +146,51 @@ async def create_permit_request(
                         "fileName": os.path.basename(file_path),
                         "fileUrl": os.path.basename(file_path)
                     })
+                    logger.info(f"File saved: {file_path}")
                 except Exception as e:
-                    print(f"Error saving file: {str(e)}")
+                    logger.error(f"Error saving file: {str(e)}")
                     # Clean up any files that were saved before the error
                     for saved_file in saved_files:
                         try:
                             os.remove(os.path.join(UPLOAD_DIR, saved_file['fileUrl']))
-                        except:
-                            pass
+                        except Exception as cleanup_error:
+                            logger.error(f"Error cleaning up file: {str(cleanup_error)}")
                     raise HTTPException(
                         status_code=500,
                         detail="Error al guardar el archivo"
                     )
 
         # Parse dates from JSON string
-        dates_list = json.loads(dates)
+        try:
+            dates_list = json.loads(dates)
+            logger.debug(f"Parsed dates: {dates_list}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing dates JSON: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid date format")
         
         # Insert into database
-        cursor.execute("""
-            INSERT INTO permit_perms 
-            (code, name, telefono, fecha, hora, tipo_novedad, description, files, file_name, file_url)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            current_user['code'],
-            current_user['name'],
-            phone,
-            ','.join(dates_list),
-            time or '',
-            noveltyType,
-            description,
-            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
-            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
-            json.dumps([f['fileName'] for f in saved_files]) if saved_files else None
-        ))
-        connection.commit()
+        try:
+            cursor.execute("""
+                INSERT INTO permit_perms 
+                (code, name, telefono, fecha, hora, tipo_novedad, description, files, file_name, file_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                current_user['code'],
+                current_user['name'],
+                phone,
+                ','.join(dates_list),
+                time or '',
+                noveltyType,
+                description,
+                json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
+                json.dumps([f['fileName'] for f in saved_files]) if saved_files else None,
+                json.dumps([f['fileName'] for f in saved_files]) if saved_files else None
+            ))
+            connection.commit()
+            logger.info("Database insert successful")
+        except Exception as db_error:
+            logger.error(f"Database error: {str(db_error)}")
+            raise
         
         return {
             "message": "Solicitud de permiso creada exitosamente",
@@ -183,24 +202,23 @@ async def create_permit_request(
         for file in saved_files:
             try:
                 os.remove(os.path.join(UPLOAD_DIR, file['fileUrl']))
-            except:
-                pass
+            except Exception as cleanup_error:
+                logger.error(f"Error cleaning up file after failure: {str(cleanup_error)}")
         
         connection.rollback()
-        print("Database error:", str(e))
+        logger.error(f"Error in create_permit_request: {str(e)}")
         raise HTTPException(
             status_code=500, 
             detail=f"Error al guardar la solicitud: {str(e)}"
         )
     finally:
         close_connection(connection)
-
+        
 @app.get("/files/{filename}")
 async def get_file(filename: str):
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    
     return FileResponse(file_path)
 
 @app.post("/new-permit-request")

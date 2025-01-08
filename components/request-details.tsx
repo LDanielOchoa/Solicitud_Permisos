@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Calendar, Clock, Phone, FileText, User, Code, Type, CheckCircle, XCircle, Paperclip, CalendarIcon, MapPin, Users } from 'lucide-react'
+import { X, Calendar, Clock, Phone, FileText, User, Code, Type, CheckCircle, XCircle, Paperclip, CalendarIcon, MapPin, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -40,7 +40,7 @@ type Request = {
 }
 
 type RequestDetailsProps = {
-  request: Request
+  requests: Request[]
   onClose: () => void
   onAction: (id: string, action: 'approve' | 'reject', reason: string) => void
 }
@@ -76,12 +76,14 @@ function processFiles(request: Request): FileInfo[] {
 
 const MotionCard = motion(Card)
 
-export default function RequestDetails({ request, onClose, onAction }: RequestDetailsProps) {
+export default function RequestDetails({ requests, onClose, onAction }: RequestDetailsProps) {
   const [reason, setReason] = useState('')
   const [activeSection, setActiveSection] = useState('info')
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null)
-  const isEquipmentRequest = !('noveltyType' in request)
-  const processedFiles = useMemo(() => processFiles(request), [request])
+  const [currentRequestIndex, setCurrentRequestIndex] = useState(0)
+  const currentRequest = requests[currentRequestIndex]
+  const isEquipmentRequest = !('noveltyType' in currentRequest)
+  const processedFiles = useMemo(() => processFiles(currentRequest), [currentRequest])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -115,7 +117,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
       sections.push('dates', 'files')
     }
     
-    if (request.status === 'pending') {
+    if (currentRequest.status === 'pending') {
       sections.push('action')
     }
 
@@ -135,7 +137,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
         ))}
       </div>
     )
-  }, [activeSection, isEquipmentRequest, request.status])
+  }, [activeSection, isEquipmentRequest, currentRequest.status])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Fecha no disponible';
@@ -180,9 +182,9 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 {isEquipmentRequest ? 'Solicitud de Equipo' : 'Solicitud de Permiso'}
               </Badge>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {request.type}
+                {currentRequest.type}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400">ID: {request.id}</p>
+              <p className="text-gray-500 dark:text-gray-400">ID: {currentRequest.id}</p>
             </motion.div>
             <motion.div
               whileHover={{ rotate: 90 }}
@@ -192,6 +194,25 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                 <X className="h-6 w-6" />
               </Button>
             </motion.div>
+          </div>
+          <div className="flex items-center space-x-4 mt-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentRequestIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentRequestIndex === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span>{currentRequestIndex + 1} / {requests.length}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentRequestIndex(prev => Math.min(requests.length - 1, prev + 1))}
+              disabled={currentRequestIndex === requests.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
           {renderSections}
         </div>
@@ -218,7 +239,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                     >
                       <Code className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Código:</span>
-                      <span>{request.code}</span>
+                      <span>{currentRequest.code}</span>
                     </motion.div>
                     <motion.div
                       className="flex items-center space-x-2"
@@ -226,16 +247,16 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                     >
                       <User className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Nombre:</span>
-                      <span>{request.name}</span>
+                      <span>{currentRequest.name}</span>
                     </motion.div>
-                    {request.phone && (
+                    {currentRequest.phone && (
                       <motion.div
                         className="flex items-center space-x-2"
                         whileHover={{ scale: 1.05 }}
                       >
                         <Phone className="w-5 h-5 text-gray-500" />
                         <span className="font-medium">Teléfono:</span>
-                        <span>{request.phone}</span>
+                        <span>{currentRequest.phone}</span>
                       </motion.div>
                     )}
                   </CardContent>
@@ -253,7 +274,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                     >
                       <Type className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Tipo:</span>
-                      <span>{request.type}</span>
+                      <span>{currentRequest.type}</span>
                     </motion.div>
                     <motion.div
                       className="flex items-center space-x-2"
@@ -261,7 +282,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                     >
                       <Calendar className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Fecha:</span>
-                      <span>{formatDate(request.createdAt)}</span>
+                      <span>{formatDate(currentRequest.createdAt)}</span>
                     </motion.div>
                     <motion.div
                       className="flex items-center space-x-2"
@@ -269,21 +290,21 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                     >
                       <Clock className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Estado:</span>
-                      <Badge className={`status-badge ${getStatusColor(request.status)}`}>
-                        {request.status}
+                      <Badge className={`status-badge ${getStatusColor(currentRequest.status)}`}>
+                        {currentRequest.status}
                       </Badge>
                     </motion.div>
-                    {request.zona && (
+                    {currentRequest.zona && (
                       <motion.div
                         className="flex items-center space-x-2"
                         whileHover={{ scale: 1.05 }}
                       >
                         <MapPin className="w-5 h-5 text-gray-500" />
                         <span className="font-medium">Zona:</span>
-                        <span>{request.zona}</span>
+                        <span>{currentRequest.zona}</span>
                       </motion.div>
                     )}
-                    {(request.codeAM || request.codePM) && (
+                    {(currentRequest.codeAM || currentRequest.codePM) && (
                       <motion.div
                         className="flex items-center space-x-2"
                         whileHover={{ scale: 1.05 }}
@@ -291,32 +312,32 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                         <Users className="w-5 h-5 text-gray-500" />
                         <span className="font-medium">Códigos:</span>
                         <span>
-                          {request.codeAM && `AM: ${request.codeAM}`}
-                          {request.codeAM && request.codePM && ', '}
-                          {request.codePM && `PM: ${request.codePM}`}
+                          {currentRequest.codeAM && `AM: ${currentRequest.codeAM}`}
+                          {currentRequest.codeAM && currentRequest.codePM && ', '}
+                          {currentRequest.codePM && `PM: ${currentRequest.codePM}`}
                         </span>
                       </motion.div>
                     )}
-                    {request.shift && (
+                    {currentRequest.shift && (
                       <motion.div
                         className="flex items-center space-x-2"
                         whileHover={{ scale: 1.05 }}
                       >
                         <Clock className="w-5 h-5 text-gray-500" />
                         <span className="font-medium">Turno:</span>
-                        <span>{request.shift}</span>
+                        <span>{currentRequest.shift}</span>
                       </motion.div>
                     )}
                   </CardContent>
                 </MotionCard>
 
-                {request.description && (
+                {currentRequest.description && (
                   <MotionCard variants={cardVariants} className="md:col-span-2">
                     <CardHeader>
                       <CardTitle>Descripción</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="whitespace-pre-wrap">{request.description}</p>
+                      <p className="whitespace-pre-wrap">{currentRequest.description}</p>
                     </CardContent>
                   </MotionCard>
                 )}
@@ -339,8 +360,8 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-3">
-                      {Array.isArray(request.dates) ? (
-                        request.dates.map((date: string, index: number) => (
+                      {Array.isArray(currentRequest.dates) ? (
+                        currentRequest.dates.map((date: string, index: number) => (
                           <motion.div
                             key={index}
                             whileHover={{ scale: 1.05 }}
@@ -351,13 +372,13 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                             </Badge>
                           </motion.div>
                         ))
-                      ) : typeof request.dates === 'string' ? (
+                      ) : typeof currentRequest.dates === 'string' ? (
                         <motion.div
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <Badge className="date-badge">
-                            {formatDate(request.dates)}
+                            {formatDate(currentRequest.dates)}
                           </Badge>
                         </motion.div>
                       ) : (
@@ -416,7 +437,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
               </motion.div>
             )}
 
-            {activeSection === 'action' && request.status === 'pending' && (
+            {activeSection === 'action' && currentRequest.status === 'pending' && (
               <motion.div
                 key="section-action"
                 initial={{ opacity: 0 }}
@@ -441,7 +462,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button 
                           variant="destructive"
-                          onClick={() => onAction(request.id, 'reject', reason)}
+                          onClick={() => onAction(currentRequest.id, 'reject', reason)}
                           className="action-button"
                         >
                           <XCircle className="mr-2 h-4 w-4" />
@@ -451,7 +472,7 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button 
                           variant="default"
-                          onClick={() => onAction(request.id, 'approve', reason)}
+                          onClick={() => onAction(currentRequest.id, 'approve', reason)}
                           className="action-button"
                         >
                           <CheckCircle className="mr-2 h-4 w-4" />
@@ -465,13 +486,13 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
             )}
           </AnimatePresence>
 
-          {request.reason && (
+          {currentRequest.reason && (
             <MotionCard>
               <CardHeader>
                 <CardTitle>Razón de la Decisión</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{request.reason}</p>
+                <p className="whitespace-pre-wrap">{currentRequest.reason}</p>
               </CardContent>
             </MotionCard>
           )}
@@ -486,5 +507,4 @@ export default function RequestDetails({ request, onClose, onAction }: RequestDe
     </motion.div>
   )
 }
-
 
