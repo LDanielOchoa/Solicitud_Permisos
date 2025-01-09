@@ -60,7 +60,7 @@ export default function EquipmentRequestForm() {
           return
         }
 
-        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('http://127.0.0.1:8000/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -89,7 +89,7 @@ export default function EquipmentRequestForm() {
 
     const fetchUsersList = async () => {
       try {
-        const response = await fetch('https://solicitud-permisos.onrender.com/users/list')
+        const response = await fetch('http://127.0.0.1:8000/users/list')
         if (!response.ok) {
           throw new Error('Error al obtener la lista de usuarios')
         }
@@ -151,7 +151,7 @@ export default function EquipmentRequestForm() {
         throw new Error('No se encontró el token de acceso')
       }
 
-      const response = await fetch('https://solicitud-permisos.onrender.com/equipment-request', {
+      const response = await fetch('http://127.0.0.1:8000/equipment-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

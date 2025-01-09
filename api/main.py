@@ -962,7 +962,52 @@ async def get_excel():
                 respuesta
             FROM permit_perms
             WHERE solicitud = 'approved'
-                AND tipo_novedad IN ('descanso', 'licencia')
+            GROUP BY code, name, telefono, tipo_novedad, description, respuesta
+            ORDER BY MIN(fecha);
+
+        """)
+        records = cursor.fetchall()
+        
+        # Process records
+        for record in records:
+            if isinstance(record['fecha_inicio'], datetime):
+                record['fecha_inicio'] = record['fecha_inicio'].strftime('%Y-%m-%d')
+            if isinstance(record['fecha_fin'], datetime):
+                record['fecha_fin'] = record['fecha_fin'].strftime('%Y-%m-%d')
+
+        return records
+        
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener los registros de permisos: {str(e)}"
+        )
+    finally:
+        close_connection(connection)
+
+
+@app.get("/excel-novedades")
+async def get_excel():
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Fetch only approved Descanso or Licencia no remunerada records
+        cursor.execute("""
+            SELECT 
+                code,
+                name,
+                telefono,
+                MIN(fecha) as fecha_inicio,
+                MAX(fecha) as fecha_fin,
+                tipo_novedad as novedad,
+                description,
+                respuesta
+            FROM permit_perms
+            WHERE solicitud = 'approved'
             GROUP BY code, name, telefono, tipo_novedad, description, respuesta
             ORDER BY MIN(fecha);
 

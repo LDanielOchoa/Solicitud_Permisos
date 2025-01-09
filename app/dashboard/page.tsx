@@ -26,7 +26,7 @@ export default function Dashboard() {
           return
         }
 
-        const response = await fetch('https://solicitud-permisos.onrender.com/auth/user', {
+        const response = await fetch('http://127.0.0.1:8000/auth/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -53,7 +53,7 @@ export default function Dashboard() {
       const token = localStorage.getItem('accessToken')
       if (!token) return
 
-      const response = await fetch(`https://solicitud-permisos.onrender.com/requests/${userCode}`, {
+      const response = await fetch(`http://127.0.0.1:8000/requests/${userCode}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

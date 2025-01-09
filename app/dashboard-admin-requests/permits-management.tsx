@@ -637,14 +637,14 @@ export default function PermitsManagement() {
                 <SelectContent>
                   <SelectItem value="all">Todas las semanas</SelectItem>
                   {Array.from({ length: 4 }).map((_, i) => {
-                    const start = startOfWeek(addWeeks(new Date(), i), { weekStartsOn: 1 })
-                    const end = endOfWeek(start, { weekStartsOn: 1 })
-                    const value = `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
-                    return (
-                      <SelectItem key={`week-${i}-${value}`} value={value}>
-                        {format(start, 'd MMM')} - {format(end, 'd MMM')}
-                      </SelectItem>
-                    )
+                  const start = startOfWeek(addWeeks(new Date(), i), { weekStartsOn: 1 })
+                  const end = endOfWeek(start, { weekStartsOn: 1 })
+                  const value = `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
+                  return (
+                    <SelectItem key={`week-${i}-${value}`} value={value}>
+                    {format(start, 'd MMM')} - {format(end, 'd MMM')}
+                    </SelectItem>
+                  )
                   })}
                 </SelectContent>
               </Select>
