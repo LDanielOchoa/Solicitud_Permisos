@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { FileText, Laptop, Filter, ChevronLeft, ChevronRight, Clock, Trash2, Check, X } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { FileText, Laptop, Filter, ChevronLeft, ChevronRight, Clock, Trash2 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import RequestDetails from '../../components/request-details'
 import { fetchRequests, updateRequestStatus, deleteRequest } from '../utils/api'
 import './permits-management.css'
@@ -34,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 
 type Request = {
   id: string
@@ -61,11 +61,46 @@ type RequestStats = {
   approved: number
   pending: number
   rejected: number
+  permits: {
+    total: number
+    pending: number
+    rejected: number
+    descanso: number
+    citaMedica: number
+    audiencia: number
+  }
+  postulations: {
+    total: number
+    pending: number
+    rejected: number
+    turnoPareja: number
+    tablaPartida: number
+    disponibleFijo: number
+  }
 }
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-64">
     <div className="loading-spinner"></div>
+  </div>
+)
+
+const StatCard = ({ title, value, color }: { title: string, value: number, color: string }) => (
+  <div className={`p-4 rounded-lg ${color}`}>
+    <h3 className="text-sm font-medium text-gray-700">{title}</h3>
+    <p className="text-2xl font-bold mt-1 text-gray-900">{value}</p>
+  </div>
+)
+
+const DetailedStatCard = ({ title, stats, color }: { title: string, stats: { [key: string]: number }, color: string }) => (
+  <div className={`p-4 rounded-lg ${color}`}>
+    <h3 className="text-sm font-medium text-gray-700 mb-2">{title}</h3>
+    {Object.entries(stats).map(([key, value]) => (
+      <div key={key} className="flex justify-between items-center mb-1">
+        <span className="text-sm text-gray-600">{key}</span>
+        <span className="font-bold text-gray-900">{value}</span>
+      </div>
+    ))}
   </div>
 )
 
@@ -83,7 +118,28 @@ export default function PermitsManagement() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [requestToDelete, setRequestToDelete] = useState<Request | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [requestStats, setRequestStats] = useState<RequestStats>({ total: 0, approved: 0, pending: 0, rejected: 0 })
+  const [requestStats, setRequestStats] = useState<RequestStats>({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    rejected: 0,
+    permits: {
+      total: 0,
+      pending: 0,
+      rejected: 0,
+      descanso: 0,
+      citaMedica: 0,
+      audiencia: 0
+    },
+    postulations: {
+      total: 0,
+      pending: 0,
+      rejected: 0,
+      turnoPareja: 0,
+      tablaPartida: 0,
+      disponibleFijo: 0
+    }
+  })
   const [isVerticalView, setIsVerticalView] = useState(false)
   const [selectedZone, setSelectedZone] = useState('all')
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set())
@@ -115,18 +171,57 @@ export default function PermitsManagement() {
       setRequests(data)
       
       // Calculate request stats
-      const stats = data.reduce((acc: RequestStats, req: Request) => {
-        acc.total++
-        if (req.status === 'approved') acc.approved++
-        else if (req.status === 'pending') acc.pending++
-        else if (req.status === 'rejected') acc.rejected++
-        return acc
-      }, { total: 0, approved: 0, pending: 0, rejected: 0 })
+      const stats: RequestStats = {
+        total: 0,
+        approved: 0,
+        pending: 0,
+        rejected: 0,
+        permits: {
+          total: 0,
+          pending: 0,
+          rejected: 0,
+          descanso: 0,
+          citaMedica: 0,
+          audiencia: 0
+        },
+        postulations: {
+          total: 0,
+          pending: 0,
+          rejected: 0,
+          turnoPareja: 0,
+          tablaPartida: 0,
+          disponibleFijo: 0
+        }
+      }
+
+      data.forEach((req: Request) => {
+        stats.total++
+        if (req.status === 'approved') stats.approved++
+        else if (req.status === 'pending') stats.pending++
+        else if (req.status === 'rejected') stats.rejected++
+        
+        if (['descanso', 'cita', 'audiencia'].includes(req.type)) {
+          stats.permits.total++
+          if (req.status === 'pending') stats.permits.pending++
+          else if (req.status === 'rejected') stats.permits.rejected++
+          if (req.type === 'descanso') stats.permits.descanso++
+          else if (req.type === 'cita') stats.permits.citaMedica++
+          else if (req.type === 'audiencia') stats.permits.audiencia++
+        } else if (['Turno pareja', 'Tabla partida', 'Disponible fijo'].includes(req.type)) {
+          stats.postulations.total++
+          if (req.status === 'pending') stats.postulations.pending++
+          else if (req.status === 'rejected') stats.postulations.rejected++
+          if (req.type === 'Turno pareja') stats.postulations.turnoPareja++
+          else if (req.type === 'Tabla partida') stats.postulations.tablaPartida++
+          else if (req.type === 'Disponible fijo') stats.postulations.disponibleFijo++
+        }
+      })
+
       setRequestStats(stats)
       
       // Filter requests based on active tab and status
       const filteredData = data.filter((req: Request) => {
-        const isPermit = 'noveltyType' in req
+        const isPermit = ['descanso', 'cita', 'audiencia'].includes(req.type)
         return (activeTab === 'permits' ? isPermit : !isPermit) && req.status === 'pending'
       })
       
@@ -339,7 +434,7 @@ export default function PermitsManagement() {
   }
 
   const renderGroupedRequestCard = ([name, requests]: [string, Request[]]) => {
-    const isEquipmentRequest = !('noveltyType' in requests[0])
+    const isEquipmentRequest = !['descanso', 'cita', 'audiencia'].includes(requests[0].type)
 
     return (
       <motion.div
@@ -353,7 +448,7 @@ export default function PermitsManagement() {
         <ContextMenu>
           <ContextMenuTrigger>
             <Card className={`h-full bg-white shadow-sm hover:shadow-md transition-all duration-300 ${
-              requests.some(req => selectedRequestIds.has(req.id))
+              requests.some(req => selectedRequestIds.has(req.id)) ? 'ring-2 ring-green-500' : ''
             }`}>
               <CardHeader className="space-y-2">
                 <div className="flex justify-between items-start">
@@ -361,10 +456,10 @@ export default function PermitsManagement() {
                     variant="outline" 
                     className={`${
                       isEquipmentRequest ? 'bg-blue-50 text-blue-700 border-blue-300' : 
-                      'bg-purple-50 text-purple-700 border-purple-300'
+                      'bg-green-50 text-green-700 border-green-300'
                     }`}
                   >
-                    {isEquipmentRequest ? 'Equipo' : 'Permiso'}
+                    {isEquipmentRequest ? 'Postulación' : 'Permiso'}
                   </Badge>
                   <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
                     Pendiente
@@ -432,8 +527,8 @@ export default function PermitsManagement() {
       variant={currentPage === page ? "default" : "outline"}
       className={`w-10 h-10 rounded-full ${
         currentPage === page
-          ? 'bg-primary text-primary-foreground'
-          : 'hover:bg-accent hover:text-accent-foreground'
+          ? 'bg-green-500 text-white'
+          : 'hover:bg-green-100 hover:text-green-700'
       }`}
       onClick={() => setCurrentPage(page)}
     >
@@ -519,39 +614,64 @@ export default function PermitsManagement() {
           Gestión de Solicitudes Pendientes
         </motion.h1>
 
-        <div className="mb-6 flex flex-wrap items-center justify-between">
-          <div className="w-full md:w-auto mb-4 md:mb-0">
-            <Card className="bg-white shadow-sm">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total de solicitudes</p>
-                    <p className="text-2xl font-bold">{requestStats.total}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Aprobadas</p>
-                    <p className="text-2xl font-bold text-green-600">{requestStats.approved}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Pendientes</p>
-                    <p className="text-2xl font-bold text-yellow-600">{requestStats.pending}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Rechazadas</p>
-                    <p className="text-2xl font-bold text-red-600">{requestStats.rejected}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="mb-6">
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle>Resumen de Solicitudes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <StatCard title="Total de solicitudes" value={requestStats.total} color="bg-green-100 text-green-800" />
+                <StatCard title="Aprobadas" value={requestStats.approved} color="bg-blue-100 text-blue-800" />
+                <StatCard title="Pendientes" value={requestStats.pending} color="bg-yellow-100 text-yellow-800" />
+                <StatCard title="Rechazadas" value={requestStats.rejected} color="bg-red-100 text-red-800" />
+              </div>
+              <Separator className="my-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DetailedStatCard 
+                  title="Permisos" 
+                  stats={{
+                    "Total": requestStats.permits.total,
+                    "Pendientes": requestStats.permits.pending,
+                    "Rechazados": requestStats.permits.rejected,
+                    "Descansos": requestStats.permits.descanso,
+                    "Citas médicas": requestStats.permits.citaMedica,
+                    "Audiencias": requestStats.permits.audiencia
+                  }}
+                  color="bg-green-50"
+                />
+                <DetailedStatCard 
+                  title="Postulaciones" 
+                  stats={{
+                    "Total": requestStats.postulations.total,
+                    "Pendientes": requestStats.postulations.pending,
+                    "Rechazados": requestStats.postulations.rejected,
+                    "Turno pareja": requestStats.postulations.turnoPareja,
+                    "Tabla partida": requestStats.postulations.tablaPartida,
+                    "Disponible fijo": requestStats.postulations.disponibleFijo
+                  }}
+                  color="bg-blue-50"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
+        <div className="mb-6 flex flex-wrap items-center justify-between">
           <Button
             variant="outline"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="w-full md:w-auto"
+            className="w-full md:w-auto mb-2 md:mb-0"
           >
             <Filter className="w-4 h-4 mr-2" />
             {isFilterOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsVerticalView(!isVerticalView)}
+            className="w-full md:w-auto"
+          >
+            {isVerticalView ? 'Vista paginada' : 'Vista vertical'}
           </Button>
         </div>
 
@@ -561,7 +681,7 @@ export default function PermitsManagement() {
           className="w-full mb-8"
         >
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-            <TabsTrigger value="permits" className="data-[state=active]:bg-purple-100">
+            <TabsTrigger value="permits" className="data-[state=active]:bg-green-100">
               <FileText className="w-5 h-5 mr-2" />
               Permisos
             </TabsTrigger>
@@ -578,7 +698,7 @@ export default function PermitsManagement() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="grid gap-4 sm:grid-cols-4 mb-6 bg-white p-4 rounded-lg shadow-sm"
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6 bg-white p-4 rounded-lg shadow-sm"
             >
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger>
@@ -637,30 +757,20 @@ export default function PermitsManagement() {
                 <SelectContent>
                   <SelectItem value="all">Todas las semanas</SelectItem>
                   {Array.from({ length: 4 }).map((_, i) => {
-                  const start = startOfWeek(addWeeks(new Date(), i), { weekStartsOn: 1 })
-                  const end = endOfWeek(start, { weekStartsOn: 1 })
-                  const value = `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
-                  return (
-                    <SelectItem key={`week-${i}-${value}`} value={value}>
-                    {format(start, 'd MMM')} - {format(end, 'd MMM')}
-                    </SelectItem>
-                  )
+                    const start = startOfWeek(addWeeks(new Date(), i), { weekStartsOn: 1 })
+                    const end = endOfWeek(start, { weekStartsOn: 1 })
+                    const value = `${format(start, 'yyyy-MM-dd')} - ${format(end, 'yyyy-MM-dd')}`
+                    return (
+                      <SelectItem key={`week-${i}-${value}`} value={value}>
+                        {format(start, 'd MMM')} - {format(end, 'd MMM')}
+                      </SelectItem>
+                    )
                   })}
                 </SelectContent>
               </Select>
             </motion.div>
           )}
         </AnimatePresence>
-
-        <div className="mb-4">
-          <Button
-            variant="outline"
-            onClick={() => setIsVerticalView(!isVerticalView)}
-            className="w-full md:w-auto"
-          >
-            {isVerticalView ? 'Vista paginada' : 'Vista vertical'}
-          </Button>
-        </div>
 
         {isLoading ? (
           <LoadingSpinner />

@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 import { SuccessMessage } from '../../components/SuccessMessage'
+import { toast } from "@/components/ui/use-toast"
 
 const getCurrentWeekDates = () => {
   const now = new Date()
@@ -40,6 +41,34 @@ const isHoliday = (date: Date): boolean => {
 
   return false;
 };
+
+const checkExistingPermits = async (dates: string[]) => {
+  try {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      throw new Error('No se encontró el token de acceso')
+    }
+
+    const response = await fetch('https://solicitud-permisos.onrender.com/check-existing-permits', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dates }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al verificar permisos existentes')
+    }
+
+    const data = await response.json()
+    return data.hasExistingPermit
+  } catch (error) {
+    console.error('Error:', error)
+    return false
+  }
+}
 
 export default function PermitRequestForm() {
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
@@ -191,15 +220,24 @@ export default function PermitRequestForm() {
     }
   }
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if ((selectedDates.length === 0 && noveltyType !== 'semanaAM' && noveltyType !== 'semanaPM') || !noveltyType) {
       setShowValidationDialog(true);
+      return;
+    }
+    
+    // Check for existing permits
+    const formattedDates = selectedDates.map(date => format(date, 'yyyy-MM-dd'));
+    const hasExistingPermit = await checkExistingPermits(formattedDates);
+
+    if (hasExistingPermit && ['descanso', 'cita', 'licencia', 'audiencia', 'diaAM', 'diaPM'].includes(noveltyType)) {
+      toast({
+        title: "Advertencia",
+        description: "Ya existe un permiso para la fecha seleccionada. No se puede realizar esta solicitud.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -270,6 +308,10 @@ export default function PermitRequestForm() {
       setSelectedDates(prev => prev.slice(0, -1))
     }
     setIsConfirmationDialogOpen(false)
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
   }
 
   if (isLoading) {
