@@ -835,7 +835,7 @@ export default function PermitsManagement() {
 
       {selectedRequests && (
         <RequestDetails
-          requests={selectedRequests}
+          requests={selectedRequests as any}
           onClose={() => setSelectedRequests(null)}
           onAction={handleRequestAction}
         />
@@ -915,4 +915,3 @@ export default function PermitsManagement() {
     </div>
   )
 }
-
