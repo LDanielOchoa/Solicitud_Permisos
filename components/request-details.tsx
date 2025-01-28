@@ -23,6 +23,7 @@ type Request = {
   code: string
   name: string
   type: string
+  time: string
   status: string
   createdAt: string
   description?: string
@@ -283,6 +284,14 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
                       <Calendar className="w-5 h-5 text-gray-500" />
                       <span className="font-medium">Fecha:</span>
                       <span>{formatDate(currentRequest.createdAt)}</span>
+                    </motion.div>
+                    <motion.div
+                      className="flex items-center space-x-2"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <Calendar className="w-5 h-5 text-gray-500" />
+                      <span className="font-medium">Hora:</span>
+                      <span>{(currentRequest.time)}</span>
                     </motion.div>
                     <motion.div
                       className="flex items-center space-x-2"

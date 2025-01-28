@@ -68,6 +68,9 @@ type RequestStats = {
     descanso: number
     citaMedica: number
     audiencia: number
+    licencia: number,
+    diaAM: number,
+    diaPM: number,
   }
   postulations: {
     total: number
@@ -129,7 +132,10 @@ export default function PermitsManagement() {
       rejected: 0,
       descanso: 0,
       citaMedica: 0,
-      audiencia: 0
+      audiencia: 0,
+      licencia: 0,
+      diaAM: 0,
+      diaPM: 0
     },
     postulations: {
       total: 0,
@@ -182,7 +188,10 @@ export default function PermitsManagement() {
           rejected: 0,
           descanso: 0,
           citaMedica: 0,
-          audiencia: 0
+          audiencia: 0,
+          licencia: 0,
+          diaAM: 0,
+          diaPM: 0
         },
         postulations: {
           total: 0,
@@ -207,6 +216,9 @@ export default function PermitsManagement() {
           if (req.type === 'descanso') stats.permits.descanso++
           else if (req.type === 'cita') stats.permits.citaMedica++
           else if (req.type === 'audiencia') stats.permits.audiencia++
+          else if (req.type === 'licencia') stats.permits.licencia++
+          else if (req.type === 'diaAM') stats.permits.diaAM++
+          else if (req.type === 'diaPM') stats.permits.diaPM++
         } else if (['Turno pareja', 'Tabla partida', 'Disponible fijo'].includes(req.type)) {
           stats.postulations.total++
           if (req.status === 'pending') stats.postulations.pending++
@@ -221,7 +233,7 @@ export default function PermitsManagement() {
       
       // Filter requests based on active tab and status
       const filteredData = data.filter((req: Request) => {
-        const isPermit = ['descanso', 'cita', 'audiencia'].includes(req.type)
+        const isPermit = ['descanso', 'cita', 'audiencia', 'licencia', 'diaAM', 'diaPM'].includes(req.type)
         return (activeTab === 'permits' ? isPermit : !isPermit) && req.status === 'pending'
       })
       
@@ -636,7 +648,10 @@ export default function PermitsManagement() {
                     "Rechazados": requestStats.permits.rejected,
                     "Descansos": requestStats.permits.descanso,
                     "Citas médicas": requestStats.permits.citaMedica,
-                    "Audiencias": requestStats.permits.audiencia
+                    "Audiencias": requestStats.permits.audiencia,
+                    "Licencias": requestStats.permits.licencia,
+                    "Día AM": requestStats.permits.diaAM,
+                    "Día PM": requestStats.permits.diaPM
                   }}
                   color="bg-green-50"
                 />
@@ -711,6 +726,9 @@ export default function PermitsManagement() {
                       <SelectItem value="descanso">Descanso</SelectItem>
                       <SelectItem value="audiencia">Audiencia</SelectItem>
                       <SelectItem value="cita">Cita médica</SelectItem>
+                      <SelectItem value="licencia">Licencia</SelectItem>
+                      <SelectItem value="diaAM">Día AM</SelectItem>
+                      <SelectItem value="diaPM">Día PM</SelectItem>
                     </>
                   ) : (
                     <>
