@@ -23,7 +23,7 @@ const getCurrentWeekDates = () => {
   const currentDay = now.getDay()
   const currentHour = now.getHours()
   
-  const baseDate = new Date(2025, 0, 27) 
+  const baseDate = new Date(2025, 1, 3); // Febrero es el mes 1 (0 = Enero, 1 = Febrero)
   
   if ((currentDay === 3 && currentHour >= 12)) {
     return addWeeks(baseDate, 1)
