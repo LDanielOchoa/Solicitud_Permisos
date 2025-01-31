@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   try {
     // Replace this URL with your actual Python backend URL
-    const backendUrl = 'https://solicitud-permisos.onrender.com/excel-permisos'
+    const backendUrl = 'http://127.0.0.1:8000/excel-permisos'
     const response = await fetch(backendUrl)
     
     if (!response.ok) {
