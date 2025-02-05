@@ -18,19 +18,23 @@ import LoadingOverlay from '../../components/loading-overlay'
 import { SuccessMessage } from '../../components/SuccessMessage'
 import { toast } from "@/components/ui/use-toast"
 
-const getCurrentWeekDates = () => {
-  const now = new Date()
-  const currentDay = now.getDay()
-  const currentHour = now.getHours()
-  
-  const baseDate = new Date(2025, 1, 10); // Febrero es el mes 1 (0 = Enero, 1 = Febrero)
-  
-  if ((currentDay === 3 && currentHour >= 12)) {
-    return addWeeks(baseDate, 1)
+const getCurrentWeekDates = (testDate = null) => {
+  const now = testDate || new Date(); // Permitir una fecha de prueba o usar la actual
+  const currentDay = now.getDay(); // 0 (domingo) a 6 (sábado)
+  const currentHour = now.getHours();
+
+  // Encuentra el lunes de la próxima semana
+  const startOfNextWeek = new Date(now);
+  const daysUntilNextMonday = 8 - (currentDay === 0 ? 7 : currentDay);
+  startOfNextWeek.setDate(now.getDate() + daysUntilNextMonday);
+
+  // Si es miércoles a las 12 pm o después, avanza otra semana
+  if (currentDay > 3 || (currentDay === 3 && currentHour >= 12)) {
+    startOfNextWeek.setDate(startOfNextWeek.getDate() + 7);
   }
-  
-  return baseDate
-}
+
+  return startOfNextWeek;
+};
 
 const isHoliday = (date: Date): boolean => {
   const year = date.getFullYear();
