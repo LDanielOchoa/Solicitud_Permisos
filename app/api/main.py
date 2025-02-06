@@ -1071,7 +1071,37 @@ async def add_user(user: UserResponse):
 
         close_connection(connection)
 
-
+@app.get("/api/history/{code}")
+async def get_user_history(code: str):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Obtener historial solo de permit_perms
+        cursor.execute("""
+            SELECT id, tipo_novedad as type, fecha as createdAt, solicitud as status
+            FROM permit_perms
+            WHERE code = %s
+            ORDER BY createdAt DESC
+        """, (code,))
+        history = cursor.fetchall()
+        
+        # Procesar las fechas para que sean serializables
+        for item in history:
+            if isinstance(item['createdAt'], datetime):
+                item['createdAt'] = item['createdAt'].isoformat()
+        
+        print(f"Historial para el código {code}:", history)  # Log for debugging
+        return history
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(status_code=500, detail=f"Error al obtener el historial: {str(e)}")
+    finally:
+        close_connection(connection)
+        
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
