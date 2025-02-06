@@ -1071,6 +1071,9 @@ async def add_user(user: UserResponse):
 
         close_connection(connection)
 
+from datetime import datetime
+from fastapi import HTTPException
+
 @app.get("/api/history/{code}")
 async def get_user_history(code: str):
     connection = create_connection()
@@ -1079,21 +1082,26 @@ async def get_user_history(code: str):
     
     cursor = connection.cursor(dictionary=True)
     try:
-        # Obtener historial solo de permit_perms
+        # Ajuste de columnas para reflejar la estructura real de la tabla permit_perms
         cursor.execute("""
-            SELECT id, tipo_novedad as type, fecha as createdAt, solicitud as status
+            SELECT 
+                id, 
+                tipo_novedad AS type, 
+                CONCAT(fecha, ' ', hora) AS createdAt, 
+                solicitud AS status
             FROM permit_perms
             WHERE code = %s
-            ORDER BY createdAt DESC
+            ORDER BY time_created DESC
         """, (code,))
         history = cursor.fetchall()
         
         # Procesar las fechas para que sean serializables
         for item in history:
-            if isinstance(item['createdAt'], datetime):
-                item['createdAt'] = item['createdAt'].isoformat()
+            try:
+                item['createdAt'] = datetime.strptime(item['createdAt'], "%Y-%m-%d %H:%M:%S").isoformat()
+            except ValueError:
+                pass  # Manejo de valores de fecha incorrectos
         
-        print(f"Historial para el código {code}:", history)  # Log for debugging
         return history
     except Exception as e:
         print("Database error:", str(e))

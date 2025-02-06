@@ -62,7 +62,6 @@ type Request = {
 type HistoryItem = {
   id: string
   type: string
-  fecha: string
   createdAt: string
   status: string
 }
@@ -121,7 +120,7 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
       setIsLoadingHistory(true)
       setHistoryError(null)
       try {
-        const response = await fetch(`https://solicitud-permisos.onrender.com/api/history/${currentRequest.code}`)
+        const response = await fetch(`http://127.0.0.1:8000/api/history/${currentRequest.code}`)
         if (!response.ok) {
           throw new Error("Failed to fetch history")
         }
@@ -397,7 +396,6 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>Fecha2</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Estado</TableHead>
               </TableRow>
@@ -407,7 +405,6 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
                 <TableRow key={item.id}>
                   <TableCell>{item.id}</TableCell>
                   <TableCell>{item.type}</TableCell>
-                  <TableCell>{item.fecha}</TableCell>
                   <TableCell>{formatDate(item.createdAt)}</TableCell>
                   <TableCell>
                     <Badge className={`status-badge ${getStatusColor(item.status)}`}>{item.status}</Badge>
