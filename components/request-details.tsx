@@ -552,4 +552,3 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     </motion.div>
   )
 }
-

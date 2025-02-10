@@ -1108,6 +1108,56 @@ async def get_user_history(code: str):
         raise HTTPException(status_code=500, detail=f"Error al obtener el historial: {str(e)}")
     finally:
         close_connection(connection)
+
+from pydantic import BaseModel
+class DateCheck(BaseModel):
+    dates: List[str]
+
+@app.post("/check-existing-requests")
+async def check_existing_requests(date_check: DateCheck, current_user: dict = Depends(get_current_user)):
+    connection = create_connection()
+    if connection is None:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # Get the date range for the check
+        today = datetime.now().date()
+        last_wednesday = today - timedelta(days=(today.weekday() - 2) % 7)
+        next_wednesday = last_wednesday + timedelta(days=7)
+        
+        # Convert the input dates to datetime objects
+        check_dates = [datetime.strptime(date, '%Y-%m-%d').date() for date in date_check.dates]
+        
+        # Filter dates to only those within the Wednesday to Wednesday range
+        filtered_dates = [date for date in check_dates if last_wednesday <= date < next_wednesday]
+        
+        if not filtered_dates:
+            return {"hasExistingRequest": False}
+        
+        # Check for existing requests in the database
+        placeholders = ', '.join(['%s'] * len(filtered_dates))
+        query = f"""
+            SELECT COUNT(*) as count
+            FROM permit_perms
+            WHERE code = %s
+            AND fecha IN ({placeholders})
+            AND solicitud != 'rejected'
+        """
+        
+        cursor.execute(query, (current_user['code'], *filtered_dates))
+        result = cursor.fetchone()
+        
+        return {"hasExistingRequest": result['count'] > 0}
+        
+    except Exception as e:
+        print("Database error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al verificar solicitudes existentes: {str(e)}"
+        )
+    finally:
+        close_connection(connection)
         
 if __name__ == "__main__":
     import uvicorn

@@ -4,10 +4,10 @@ from mysql.connector import Error
 def create_connection():
     try:
         connection = mysql.connector.connect(
-            host="autorack.proxy.rlwy.net",
-            port=59229,
+            host="junction.proxy.rlwy.net",
+            port=48135,
             user="root",
-            password="NxEMuyuXacHdTMdCeWGOBcfsdTFIjsEJ",
+            password="UfuGUdsigwumXMGkwuabYQHYPjQzWAZs",
             database="railway"
         )
         return connection
