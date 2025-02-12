@@ -346,7 +346,6 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
         <CardContent className="space-y-4">
           <Textarea
             placeholder="Razón de aprobación o rechazo"
-            value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="min-h-[100px]"
           />
