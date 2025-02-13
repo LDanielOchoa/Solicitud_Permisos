@@ -126,11 +126,13 @@ export default function PermitRequestForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      })
-
+      });
+    
       if (!response.ok) {
-        throw new Error('Error al enviar la solicitud')
+        throw new Error('Error al enviar la solicitud');
       }
+    
+      setIsSuccess(true);     
 
       const result = await response.json()
       console.log("New permit request result:", result)
@@ -187,8 +189,6 @@ export default function PermitRequestForm() {
   }
 
   const supervisors = [
-    { code: "0001", name: "Manuel Lopez" },
-    { code: "0002", name: "Antonio Rubiano" },
     { code: "0003", name: "Enrique Fajardo" },
     { code: "0004", name: "Mario Valle" },
     { code: "0005", name: "Oliver Barbosa" },
@@ -298,6 +298,7 @@ export default function PermitRequestForm() {
                   <SelectItem value="licencia">Licencia no remunerada</SelectItem>
                   <SelectItem value="audiencia">Audiencia o curso de tránsito</SelectItem>
                   <SelectItem value="cita">Cita médica</SelectItem>
+                  <SelectItem value="cambioTurno">Cambio de turno</SelectItem>
                   <SelectItem value="semanaAM">Semana A.M.</SelectItem>
                   <SelectItem value="semanaPM">Semana P.M.</SelectItem>
                   <SelectItem value="diaAM">Día A.M.</SelectItem>
