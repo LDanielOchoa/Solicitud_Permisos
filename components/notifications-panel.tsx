@@ -1,14 +1,8 @@
 'use client'
 
-<<<<<<< HEAD
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Bell, Calendar, Filter, SortDesc, CheckCheck, Loader2 } from 'lucide-react'
-=======
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Bell, Filter, SortDesc, CheckCheck, Loader2 } from 'lucide-react'
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,18 +34,12 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   const [filter, setFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [notifications, setNotifications] = useState<Notification[]>([])
-<<<<<<< HEAD
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
-=======
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const notificationsPerPage = 5
   const isMobile = useMediaQuery('(max-width: 768px)')
-<<<<<<< HEAD
-=======
   const panelRef = useRef<HTMLDivElement>(null)
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -98,8 +86,6 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     fetchNotifications()
   }, [fetchNotifications])
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
@@ -113,7 +99,6 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
     }
   }, [onClose])
 
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)
   const markAsRead = useCallback((notificationId: number) => {
     setNotifications(prev => 
       prev.map(notif => 
@@ -210,7 +195,6 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
 
   return (
     <motion.div
-<<<<<<< HEAD
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -354,152 +338,3 @@ export default function NotificationsPanel({ onClose, onMarkAllAsRead }: Notific
   )
 }
 
-=======
-      ref={panelRef}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="bg-black bg-opacity-50 absolute inset-0" onClick={onClose} />
-      <div className="text-item-center item-center relative w-full md:w-[480px] bg-green-50 shadow-xl rounded-lg overflow-hidden border border-green-200 max-h-[50vh] flex flex-col">
-        <CardHeader className="border-b border-green-200 px-6 py-4 bg-green-100">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Bell className="w-5 h-5 text-green-600" />
-              <CardTitle className="text-green-800">Notificaciones</CardTitle>
-            </div>
-            <div className="flex items-center space-x-2">
-              {!isMobile && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleMarkAllAsRead}
-                  className="text-sm text-green-700 hover:text-green-900 hover:bg-green-200"
-                >
-                  <CheckCheck className="w-4 h-4 mr-2" />
-                  Marcar todo como leído
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" onClick={onClose} className="text-green-700 hover:text-green-900 hover:bg-green-200">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-
-        <div className="p-4 border-b border-green-200">
-          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
-            <div className="flex items-center space-x-2 w-full md:w-auto">
-              <Filter className="w-4 h-4 text-green-600" />
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-full md:w-[150px] bg-white border-green-300 text-green-800">
-                  <SelectValue placeholder="Filtrar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="pending">Pendientes</SelectItem>
-                  <SelectItem value="permiso">Permisos</SelectItem>
-                  <SelectItem value="equipo">Equipos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2 w-full md:w-auto">
-              <SortDesc className="w-4 h-4 text-green-600" />
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full md:w-[150px] bg-white border-green-300 text-green-800">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Más recientes</SelectItem>
-                  <SelectItem value="oldest">Más antiguas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <ScrollArea className="flex-grow">
-          <div className="p-2">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-8 text-green-600">
-                <Loader2 className="w-12 h-12 mb-4 animate-spin" />
-                <p className="text-sm">Cargando notificaciones...</p>
-              </div>
-            ) : currentNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-green-600">
-                <Bell className="w-12 h-12 mb-4 opacity-20" />
-                <p className="text-sm">No hay notificaciones</p>
-              </div>
-            ) : (
-              <AnimatePresence>
-                {currentNotifications.map((notification) => (
-                  <NotificationItem
-                    key={notification.uniqueId}
-                    notification={notification}
-                    onMarkAsRead={markAsRead}
-                    onUpdateStatus={updateNotificationStatus}
-                  />
-                ))}
-              </AnimatePresence>
-            )}
-          </div>
-        </ScrollArea>
-
-        {totalPages > 1 && (
-          <div className="border-t border-green-200 p-4">
-            <div className="flex justify-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="border-green-300 text-green-700 hover:bg-green-100"
-              >
-                Anterior
-              </Button>
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={currentPage === page ? "bg-green-600 text-white" : "border-green-300 text-green-700 hover:bg-green-100"}
-                  >
-                    {page}
-                  </Button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="border-green-300 text-green-700 hover:bg-green-100"
-              >
-                Siguiente
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {isMobile && (
-          <div className="border-t border-green-200 p-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="w-full text-sm text-green-700 hover:text-green-900 hover:bg-green-200"
-            >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Marcar todo como leído
-            </Button>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  )
-}
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)

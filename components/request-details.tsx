@@ -550,8 +550,4 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
       {selectedFile && <FilePreviewModal file={selectedFile} onClose={() => setSelectedFile(null)} />}
     </motion.div>
   )
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 9f62569 (Add: Se agrego nueva funcioanlidad en request form)
