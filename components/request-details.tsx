@@ -284,9 +284,13 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
                 </motion.div>
               ))
             ) : typeof currentRequest.dates === "string" ? (
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Badge className="date-badge">{formatDate(currentRequest.dates)}</Badge>
-              </motion.div>
+              currentRequest.dates
+                .split(/[,|]/) // Dividir por coma o barra vertical (puedes ajustar según tu formato)
+                .map((date, index) => (
+                  <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Badge className="date-badge">{formatDate(date.trim())}</Badge>
+                  </motion.div>
+                ))
             ) : (
               <p className="text-gray-500">No hay fechas disponibles</p>
             )}
@@ -294,7 +298,7 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
         </CardContent>
       </MotionCard>
     </motion.div>
-  )
+  );  
 
   const renderFilesSection = () => (
     <motion.div key="section-files" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
