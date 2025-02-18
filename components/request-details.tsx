@@ -267,38 +267,40 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
   )
 
   const renderDatesSection = () => (
-    <motion.div key="section-dates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <MotionCard>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CalendarIcon className="w-5 h-5 text-purple-500" />
-            <span>Fechas Solicitadas</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {Array.isArray(currentRequest.dates) ? (
-              currentRequest.dates.map((date: string, index: number) => (
+  <motion.div key="section-dates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <MotionCard>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <CalendarIcon className="w-5 h-5 text-purple-500" />
+          <span>Fechas Solicitadas</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-3">
+          {Array.isArray(currentRequest.dates) ? (
+            currentRequest.dates.map((date: string, index: number) => (
+              <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Badge className="date-badge">{formatDate(date)}</Badge>
+              </motion.div>
+            ))
+          ) : typeof currentRequest.dates === "string" ? (
+            currentRequest.dates
+              .split(/\s*,\s*/) // Divide por coma con espacios opcionales alrededor
+              .filter(date => date.trim() !== "") // Filtra valores vacíos si los hay
+              .map((date, index) => (
                 <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Badge className="date-badge">{formatDate(date)}</Badge>
+                  <Badge className="date-badge">{formatDate(date.trim())}</Badge>
                 </motion.div>
               ))
-            ) : typeof currentRequest.dates === "string" ? (
-              currentRequest.dates
-                .split(/[,|]/) // Dividir por coma o barra vertical (puedes ajustar según tu formato)
-                .map((date, index) => (
-                  <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Badge className="date-badge">{formatDate(date.trim())}</Badge>
-                  </motion.div>
-                ))
-            ) : (
-              <p className="text-gray-500">No hay fechas disponibles</p>
-            )}
-          </div>
-        </CardContent>
-      </MotionCard>
-    </motion.div>
-  );  
+          ) : (
+            <p className="text-gray-500">No hay fechas disponibles</p>
+          )}
+        </div>
+      </CardContent>
+    </MotionCard>
+  </motion.div>
+);
+
 
   const renderFilesSection = () => (
     <motion.div key="section-files" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
