@@ -114,6 +114,15 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
   const isEquipmentRequest = !("noveltyType" in currentRequest)
   const processedFiles = useMemo(() => processFiles(currentRequest), [currentRequest])
 
+
+  const handleAction = (action: "approve" | "reject") => {
+    if (!reason.trim()) {
+      toast.error("Debe proporcionar una razón antes de enviar.");
+      return;
+    }
+    onAction(currentRequest.id, action, reason);
+  };
+  
   useEffect(() => {
     document.body.style.overflow = "hidden"
     const fetchHistory = async () => {
@@ -365,24 +374,16 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
           />
           <div className="flex justify-end space-x-4">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="destructive"
-                onClick={() => onAction(currentRequest.id, "reject", reason)}
-                className="action-button"
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Rechazar
-              </Button>
+            <Button variant="destructive" onClick={() => handleAction("reject")} className="action-button">
+            <XCircle className="mr-2 h-4 w-4" />
+            Rechazar
+            </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="default"
-                onClick={() => onAction(currentRequest.id, "approve", reason)}
-                className="action-button"
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Aprobar
-              </Button>
+            <Button variant="default" onClick={() => handleAction("approve")} className="action-button">
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Aprobar
+            </Button>
             </motion.div>
           </div>
         </CardContent>
