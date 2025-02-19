@@ -30,7 +30,7 @@ import FilePreviewModal from "./file-preview-modal"
 import FilePreviewThumbnail from "./file-preview-thumbnail"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"  
 
 type FileInfo = {
   fileName: string
@@ -158,12 +158,20 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
   }
-
   const formatDate = (dateString: string) => {
-    if (!dateString) return "Fecha no disponible"
-    const date = parseISO(dateString)
-    return isValid(date) ? format(date, "PPP", { locale: es }) : "Fecha inválida"
-  }
+    if (!dateString) return "Fecha no disponible";
+
+    return dateString
+      .split(",") 
+      .map((date) => date.trim()) 
+      .map((date) => {
+        const parsedDate = parseISO(date);
+        return isValid(parsedDate) ? format(parsedDate, "PPP", { locale: es }) : "Fecha inválida";
+      })
+      .join(", "); 
+  };
+
+  
 
   const renderInfoSection = () => (
     <motion.div
@@ -266,41 +274,41 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     </motion.div>
   )
 
-  const renderDatesSection = () => (
-  <motion.div key="section-dates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    <MotionCard>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <CalendarIcon className="w-5 h-5 text-purple-500" />
-          <span>Fechas Solicitadas</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-3">
-          {Array.isArray(currentRequest.dates) ? (
-            currentRequest.dates.map((date: string, index: number) => (
-              <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Badge className="date-badge">{formatDate(date)}</Badge>
-              </motion.div>
-            ))
-          ) : typeof currentRequest.dates === "string" ? (
-            currentRequest.dates
-              .split(/\s*,\s*/) // Divide por coma con espacios opcionales alrededor
-              .filter(date => date.trim() !== "") // Filtra valores vacíos si los hay
-              .map((date, index) => (
-                <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Badge className="date-badge">{formatDate(date.trim())}</Badge>
-                </motion.div>
-              ))
-          ) : (
-            <p className="text-gray-500">No hay fechas disponibles</p>
-          )}
-        </div>
-      </CardContent>
-    </MotionCard>
-  </motion.div>
-);
-
+  const renderDatesSection = () => {
+    // Si es un string separado por comas, lo convertimos en un array
+    const dates =
+      typeof currentRequest.dates === "string"
+        ? currentRequest.dates.split(",").map((date) => date.trim()) // 🔥 Convertir a array y limpiar espacios
+        : Array.isArray(currentRequest.dates)
+        ? currentRequest.dates
+        : [];
+  
+    return (
+      <motion.div key="section-dates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <MotionCard>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <CalendarIcon className="w-5 h-5 text-purple-500" />
+              <span>Fechas Solicitadas</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {dates.length > 0 ? (
+                dates.map((date: string, index: number) => (
+                  <motion.div key={index} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Badge className="date-badge">{formatDate(date)}</Badge>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-500">No hay fechas disponibles</p>
+              )}
+            </div>
+          </CardContent>
+        </MotionCard>
+      </motion.div>
+    );
+  };  
 
   const renderFilesSection = () => (
     <motion.div key="section-files" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
