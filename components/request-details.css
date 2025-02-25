@@ -1,9 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
+
+textarea {
+  z-index: 10; /* Asegúrate de que esté por encima de otros elementos */
+}
+
 .request-details-overlay {
   font-family: 'Poppins', sans-serif;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(10px);
+ /* backdrop-filter: blur(10px); */
 }
 
 .request-details-container {

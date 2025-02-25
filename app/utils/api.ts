@@ -10,7 +10,11 @@ export async function fetchRequests() {
   return response.json();
 }
 
-export async function updateRequestStatus(id: string, action: 'approve' | 'reject', reason: string) {
+export async function updateRequestStatus(
+  id: string,
+  action: 'approve' | 'reject',
+  reason: string
+) {
   const response = await fetch(`${API_URL}/requests/${id}`, {
     method: 'PUT',
     headers: {

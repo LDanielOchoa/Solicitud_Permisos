@@ -342,7 +342,8 @@ export default function PermitsManagement() {
 
   const handleRequestAction = async (id: string, action: "approve" | "reject", reason: string) => {
     try {
-      await updateRequestStatus(id, action, reason || customResponse)
+      // Aquí se llama a updateRequestStatus que ahora envía { status, respuesta } al backend.
+      await updateRequestStatus(id, action, reason);
       await loadRequests()
       setSelectedRequests(null)
       setCustomResponse("")
@@ -359,16 +360,15 @@ export default function PermitsManagement() {
       })
     }
   }
+  
 
   const handleDeleteRequest = async (request: Request) => {
     try {
       await deleteRequest(request.id)
       await loadRequests()
 
-      // Calculate the number of requests on the current page after deletion
       const currentPageRequests = Object.values(filteredRequests).flat().length - (currentPage - 1) * requestsPerPage
 
-      // If the current page is empty after deletion and it's not the first page, go to the previous page
       if (currentPageRequests <= 1 && currentPage > 1 && Object.keys(filteredRequests).length > 0) {
         setCurrentPage((prev) => Math.max(1, prev - 1))
       }
@@ -677,7 +677,7 @@ export default function PermitsManagement() {
                     Descansos: requestStats.permits.descanso,
                     "Citas médicas": requestStats.permits.citaMedica,
                     Audiencias: requestStats.permits.audiencia,
-                    Licencias: requestStats.permits.licencia,
+                    "Licencias": requestStats.permits.licencia,
                     "Día AM": requestStats.permits.diaAM,
                     "Día PM": requestStats.permits.diaPM,
                   }}

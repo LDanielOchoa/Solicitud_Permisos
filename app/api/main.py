@@ -642,7 +642,6 @@ def update_request(
     
     cursor = connection.cursor()
     try:
-        # Try updating permit_perms first
         cursor.execute("""
             UPDATE permit_perms
             SET solicitud = %s, respuesta = %s
@@ -650,7 +649,6 @@ def update_request(
         """, (request['status'], request.get('respuesta', ''), request_id))
         
         if cursor.rowcount == 0:
-            # If no rows were affected, try permit_post
             cursor.execute("""
                 UPDATE permit_post
                 SET solicitud = %s, respuesta = %s
