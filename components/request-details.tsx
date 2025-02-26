@@ -479,7 +479,7 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     historyError,
     history,
     processedFiles,
-  ]) // Added processedFiles to dependencies
+  ]) 
 
   return (
     <motion.div
