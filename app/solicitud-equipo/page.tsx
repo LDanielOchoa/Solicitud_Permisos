@@ -10,11 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, AlertCircle, Search } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Navigation from './navigation'
-import LoadingOverlay from './loading-overlay'
-import { UserSelectDialog } from './user-select-dialog'
-import { SuccessMessage } from './SuccessMessage'
-import { ErrorModal } from './ErrorModal'
+import Navigation from '../../components/navigation'
+import LoadingOverlay from '../../components/loading-overlay'
+import { UserSelectDialog } from '../../components/user-select-dialog'
+import { SuccessMessage } from '../../components/SuccessMessage'
+import { ErrorModal } from '../../components/ErrorModal'
 
 interface User {
   code: string;
@@ -403,3 +403,4 @@ export default function EquipmentRequestForm() {
     </div>
   )
 }
+
