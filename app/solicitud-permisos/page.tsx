@@ -17,19 +17,10 @@ import Navigation from '../../components/navigation'
 import LoadingOverlay from '../../components/loading-overlay'
 import { SuccessMessage } from '../../components/SuccessMessage'
 import { toast } from "@/components/ui/use-toast"
-
 const getCurrentWeekDates = (testDate = null) => {
-  const now = testDate || new Date(); 
-  const currentDay = now.getDay();
-  const currentHour = now.getHours();
-
-  const startOfNextWeek = new Date(now);
-  const daysUntilNextMonday = 8 - (currentDay === 0 ? 7 : currentDay);
-  startOfNextWeek.setDate(now.getDate() + daysUntilNextMonday);
-
-  if (currentDay > 3 || (currentDay === 3 && currentHour >= 12)) {
-    startOfNextWeek.setDate(startOfNextWeek.getDate() + 7);
-  }
+  const now = testDate || new Date();
+  
+  const startOfNextWeek = new Date(now.getFullYear(), 2, 25); 
 
   return startOfNextWeek;
 };
@@ -133,15 +124,15 @@ export default function PermitRequestForm() {
 
   useEffect(() => {
     const updateDates = () => {
-      const startDate = getCurrentWeekDates()
-      setWeekDates(Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(startDate, { weekStartsOn: 1 }), i)))
-    }
-
-    updateDates() // Initial update
-    const timer = setInterval(updateDates, 60000) // Check every minute
-
-    return () => clearInterval(timer)
-  }, [])
+      const startDate = new Date(2025, 2, 25); // 25 de marzo de 2024
+      setWeekDates(Array.from({ length: 6 }, (_, i) => addDays(startDate, i))); // Genera del 25 al 30 de marzo
+    };
+  
+    updateDates(); // Actualización inicial
+    const timer = setInterval(updateDates, 60000); // Verificar cada minuto
+  
+    return () => clearInterval(timer);
+  }, []);  
 
   const handlePhoneDoubleClick = () => {
     setIsPhoneDialogOpen(true)
@@ -315,6 +306,8 @@ export default function PermitRequestForm() {
   const removeFile = (index: number) => {
     setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
   }
+
+  
 
   if (isLoading) {
     return <LoadingOverlay />
