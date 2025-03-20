@@ -66,13 +66,20 @@ function LoginPage() {
     try {
       const token = localStorage.getItem("accessToken");
 
-      const response = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
+      fetch("https://solicitud-permisos.onrender.com/auth/user", {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${token}`, // 🔥 Enviar token correctamente
+          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         }
-      });
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("No autorizado");
+        return response.json();
+      })
+      .then(data => console.log("Usuario:", data))
+      .catch(error => console.error("Error:", error));
+
 
 
       const data = await response.json();
