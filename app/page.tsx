@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -64,23 +64,17 @@ function LoginPage() {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
-
-      const res = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
-        method: "GET",
+      const response = await fetch("https://solicitud-permisos.onrender.com/auth/login", {
+        method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, password }),
       });
-      
-      const data = await res.json();
-      
-      if (res.ok) { ... }
 
+      const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("accessToken", data.access_token);
         localStorage.setItem("userRole", data.role);
         localStorage.setItem("userCode", code);
 
