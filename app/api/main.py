@@ -34,8 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Endpoint de login sin token de acceso
-@app.post("/auth/login")
+@app.post("/auth/login", response_model=LoginResponse)
 def login(request: LoginRequest):
     connection = create_connection()
     if connection is None:
@@ -50,9 +49,11 @@ def login(request: LoginRequest):
     if not user or not verify_password(request.password, user['password']):
         raise HTTPException(status_code=400, detail="Credenciales inválidas")
     
-    response = {"role": user['role']}
+    access_token = create_access_token(
+        data={"sub": user['code']}, expires_delta=timedelta(minutes=30)
+    )
+    response = {"access_token": access_token, "role": user['role']}
     return JSONResponse(content=response, headers={"Access-Control-Allow-Origin": "*"})
-
 
 @app.get("/auth/user", response_model=UserResponse)
 def get_user_info(current_user: dict = Depends(get_current_user)):
@@ -1159,4 +1160,3 @@ async def check_existing_requests(date_check: DateCheck, current_user: dict = De
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
