@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar que redirectUrl sea una URL permitida
-    const allowedDomains = ["solicitud-permisos.sao6.com.co", "solicitud-permisos.onrender.com"]
+    const allowedDomains = ["miprogramacionsao6.vercel.app", "solicitud-permisos.onrender.com"]
 
     const urlObj = new URL(redirectUrl)
     const isDomainAllowed = allowedDomains.some(
