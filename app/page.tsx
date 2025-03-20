@@ -1,81 +1,104 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { motion } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, User, Lock } from 'lucide-react'
-import LoadingOverlay from '@/components/loading-overlay'
-import Image from 'next/image'
-import { ErrorModal } from '@/components/error-modal'
+import { Eye, EyeOff, User, Lock } from "lucide-react"
+import LoadingOverlay from "@/components/loading-overlay"
+import Image from "next/image"
+import { ErrorModal } from "@/components/error-modal"
 
 export default function LoginPage() {
-  const [code, setCode] = useState('')
-  const [password, setPassword] = useState('')
+  const [code, setCode] = useState("")
+  const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loginAttempts, setLoginAttempts] = useState(0)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Verificar si hay parámetros de autenticación en la URL
+  useEffect(() => {
+    const urlCode = searchParams?.get("code")
+    const urlPassword = searchParams?.get("password")
+
+    if (urlCode && urlPassword) {
+      // Si hay credenciales en la URL, establecerlas y enviar el formulario automáticamente
+      setCode(urlCode)
+      setPassword(urlPassword)
+
+      // Pequeño retraso para asegurar que los estados se actualicen
+      setTimeout(() => {
+        const form = document.querySelector("form")
+        if (form) {
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }))
+        }
+      }, 500)
+    }
+  }, [searchParams])
 
   const validateCode = (code: string): boolean => {
-    if (code.length !== 4) return false;
-    const numCode = parseInt(code, 10);
-    if (numCode < 10 && code.startsWith('000')) return true;
-    if (numCode < 100 && code.startsWith('00')) return true;
-    if (numCode < 1000 && code.startsWith('0')) return true;
-    if (numCode >= 1000) return true;
-    return false;
+    if (code.length !== 4) return false
+    const numCode = Number.parseInt(code, 10)
+    if (numCode < 10 && code.startsWith("000")) return true
+    if (numCode < 100 && code.startsWith("00")) return true
+    if (numCode < 1000 && code.startsWith("0")) return true
+    if (numCode >= 1000) return true
+    return false
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError('')
+    setError("")
 
     if (!validateCode(code)) {
-      setError('El código debe tener 4 dígitos. Use ceros a la izquierda si es necesario (ej: 0025, 0125, 1111).')
+      setError("El código debe tener 4 dígitos. Use ceros a la izquierda si es necesario (ej: 0025, 0125, 1111).")
       setIsLoading(false)
       return
     }
 
     try {
-      const response = await fetch('https://solicitud-permisos.onrender.com/auth/login', {
-        method: 'POST',
+      const response = await fetch("https://solicitud-permisos.onrender.com/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ code, password }),
       })
-      
+
       const data = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('accessToken', data.access_token)
-        localStorage.setItem('userRole', data.role)
-        localStorage.setItem('userCode', code)
-        
-        if (data.role === 'admin' || data.role === 'testers') {
-          router.push('/dashboard-admin-requests')
+        localStorage.setItem("accessToken", data.access_token)
+        localStorage.setItem("userRole", data.role)
+        localStorage.setItem("userCode", code)
+
+        if (data.role === "admin" || data.role === "testers") {
+          router.push("/dashboard-admin-requests")
         } else {
-          router.push('/dashboard')
+          router.push("/dashboard")
         }
       } else {
-        setLoginAttempts(prevAttempts => {
+        setLoginAttempts((prevAttempts) => {
           const newAttempts = prevAttempts + 1
           if (newAttempts >= 3) {
             setShowErrorModal(true)
           }
           return newAttempts
         })
-        setError(data.msg || 'Credenciales inválidas')
+        setError(data.msg || "Credenciales inválidas")
       }
     } catch (error) {
-      setError('Ocurrió un error. Por favor, intente nuevamente.')
-      console.error('Error de inicio de sesión:', error)
+      setError("Ocurrió un error. Por favor, intente nuevamente.")
+      console.error("Error de inicio de sesión:", error)
     } finally {
       setIsLoading(false)
     }
@@ -111,7 +134,9 @@ export default function LoginPage() {
                 className="space-y-4"
               >
                 <div className="relative">
-                  <Label htmlFor="code" className="text-green-700">Código</Label>
+                  <Label htmlFor="code" className="text-green-700">
+                    Código
+                  </Label>
                   <div className="relative mt-1">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 h-5 w-5" />
                     <Input
@@ -119,7 +144,7 @@ export default function LoginPage() {
                       type="text"
                       value={code}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                        const value = e.target.value.replace(/\D/g, "").slice(0, 4)
                         setCode(value)
                       }}
                       className="pl-10 border-green-300 focus:border-green-500 focus:ring-green-500"
@@ -130,9 +155,11 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {code !== 'sao6admin' && (
+                {code !== "sao6admin" && (
                   <div className="relative">
-                    <Label htmlFor="password" className="text-green-700">Contraseña</Label>
+                    <Label htmlFor="password" className="text-green-700">
+                      Contraseña
+                    </Label>
                     <div className="relative mt-1">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 h-5 w-5" />
                       <Input
@@ -149,28 +176,20 @@ export default function LoginPage() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 hover:text-green-600"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                   </div>
                 )}
               </motion.div>
 
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
+              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
                 <Button
                   type="submit"
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 rounded-lg transition-all duration-300 transform hover:scale-105"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                  {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
               </motion.div>
 
@@ -196,15 +215,13 @@ export default function LoginPage() {
             className="text-center"
           >
             <h2 className="text-4xl font-bold mb-4">¡Bienvenido!</h2>
-            <p className="text-green-100">
-              Sistema de gestión integrado para el control y seguimiento de actividades.
-            </p>
+            <p className="text-green-100">Sistema de gestión integrado para el control y seguimiento de actividades.</p>
           </motion.div>
         </div>
       </motion.div>
 
       {isLoading && <LoadingOverlay />}
-      <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} /> 
+      <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} />
     </div>
   )
 }
