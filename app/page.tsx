@@ -1,68 +1,66 @@
-"use client"
+"use client";
 
-import type React from "react"
+import React, { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, User, Lock } from "lucide-react";
+import LoadingOverlay from "@/components/loading-overlay";
+import Image from "next/image";
+import { ErrorModal } from "@/components/error-modal";
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, User, Lock } from "lucide-react"
-import LoadingOverlay from "@/components/loading-overlay"
-import Image from "next/image"
-import { ErrorModal } from "@/components/error-modal"
-
-export default function LoginPage() {
-  const [code, setCode] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [loginAttempts, setLoginAttempts] = useState(0)
-  const [showErrorModal, setShowErrorModal] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
+function LoginPage() {
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Verificar si hay parámetros de autenticación en la URL
   useEffect(() => {
-    const urlCode = searchParams?.get("code")
-    const urlPassword = searchParams?.get("password")
+    const urlCode = searchParams?.get("code");
+    const urlPassword = searchParams?.get("password");
 
     if (urlCode && urlPassword) {
       // Si hay credenciales en la URL, establecerlas y enviar el formulario automáticamente
-      setCode(urlCode)
-      setPassword(urlPassword)
+      setCode(urlCode);
+      setPassword(urlPassword);
 
       // Pequeño retraso para asegurar que los estados se actualicen
       setTimeout(() => {
-        const form = document.querySelector("form")
+        const form = document.querySelector("form");
         if (form) {
-          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }))
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
         }
-      }, 500)
+      }, 500);
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   const validateCode = (code: string): boolean => {
-    if (code.length !== 4) return false
-    const numCode = Number.parseInt(code, 10)
-    if (numCode < 10 && code.startsWith("000")) return true
-    if (numCode < 100 && code.startsWith("00")) return true
-    if (numCode < 1000 && code.startsWith("0")) return true
-    if (numCode >= 1000) return true
-    return false
-  }
+    if (code.length !== 4) return false;
+    const numCode = Number.parseInt(code, 10);
+    if (numCode < 10 && code.startsWith("000")) return true;
+    if (numCode < 100 && code.startsWith("00")) return true;
+    if (numCode < 1000 && code.startsWith("0")) return true;
+    if (numCode >= 1000) return true;
+    return false;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     if (!validateCode(code)) {
-      setError("El código debe tener 4 dígitos. Use ceros a la izquierda si es necesario (ej: 0025, 0125, 1111).")
-      setIsLoading(false)
-      return
+      setError("El código debe tener 4 dígitos. Use ceros a la izquierda si es necesario (ej: 0025, 0125, 1111).");
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -72,37 +70,37 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ code, password }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("accessToken", data.access_token)
-        localStorage.setItem("userRole", data.role)
-        localStorage.setItem("userCode", code)
+        localStorage.setItem("accessToken", data.access_token);
+        localStorage.setItem("userRole", data.role);
+        localStorage.setItem("userCode", code);
 
         if (data.role === "admin" || data.role === "testers") {
-          router.push("/dashboard-admin-requests")
+          router.push("/dashboard-admin-requests");
         } else {
-          router.push("/dashboard")
+          router.push("/dashboard");
         }
       } else {
         setLoginAttempts((prevAttempts) => {
-          const newAttempts = prevAttempts + 1
+          const newAttempts = prevAttempts + 1;
           if (newAttempts >= 3) {
-            setShowErrorModal(true)
+            setShowErrorModal(true);
           }
-          return newAttempts
-        })
-        setError(data.msg || "Credenciales inválidas")
+          return newAttempts;
+        });
+        setError(data.msg || "Credenciales inválidas");
       }
     } catch (error) {
-      setError("Ocurrió un error. Por favor, intente nuevamente.")
-      console.error("Error de inicio de sesión:", error)
+      setError("Ocurrió un error. Por favor, intente nuevamente.");
+      console.error("Error de inicio de sesión:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen from-green-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -112,7 +110,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10"
       >
-        {/* Left side - Login Form */}
+        {/* Lado izquierdo - Formulario de inicio de sesión */}
         <div className="w-full md:w-1/2 p-8 md:p-12">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -144,8 +142,8 @@ export default function LoginPage() {
                       type="text"
                       value={code}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "").slice(0, 4)
-                        setCode(value)
+                        const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        setCode(value);
                       }}
                       className="pl-10 border-green-300 focus:border-green-500 focus:ring-green-500"
                       placeholder="Ingrese su código (ej: 0025, 0125, 1111)"
@@ -206,7 +204,7 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Right side - Welcome Message */}
+        {/* Lado derecho - Mensaje de bienvenida */}
         <div className="w-full md:w-1/2 bg-green-500 text-white p-12 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -215,7 +213,9 @@ export default function LoginPage() {
             className="text-center"
           >
             <h2 className="text-4xl font-bold mb-4">¡Bienvenido!</h2>
-            <p className="text-green-100">Sistema de gestión integrado para el control y seguimiento de actividades.</p>
+            <p className="text-green-100">
+              Sistema de gestión integrado para el control y seguimiento de actividades.
+            </p>
           </motion.div>
         </div>
       </motion.div>
@@ -223,6 +223,14 @@ export default function LoginPage() {
       {isLoading && <LoadingOverlay />}
       <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} />
     </div>
-  )
+  );
 }
 
+// Componente wrapper que envuelve LoginPage en un Suspense para evitar el error con useSearchParams
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <LoginPage />
+    </Suspense>
+  );
+}
