@@ -64,17 +64,21 @@ function LoginPage() {
     }
 
     try {
-      const response = await fetch("https://solicitud-permisos.onrender.com/auth/login", {
-        method: "POST",
+      const token = localStorage.getItem("accessToken");
+
+      const response = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code, password }),
+          "Authorization": `Bearer ${token}`, // 🔥 Enviar token correctamente
+          "Content-Type": "application/json"
+        }
       });
+
 
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem("accessToken", data.access_token);
         localStorage.setItem("userRole", data.role);
         localStorage.setItem("userCode", code);
 
