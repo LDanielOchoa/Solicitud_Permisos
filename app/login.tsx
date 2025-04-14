@@ -29,19 +29,18 @@ export default function LoginPage() {
   const [tokenMessage, setTokenMessage] = useState("")
   const [tokenVerified, setTokenVerified] = useState(false)
   const [showHolyWeekMessage, setShowHolyWeekMessage] = useState(false)
+  const [userName, setUserName] = useState("")
+  const [userRole, setUserRole] = useState("")
 
   const router = useRouter()
   const searchParams = useSearchParams()
 
   // Check if current date is during Holy Week (before April 21, 2024)
-  useEffect(() => {
+  const isDuringHolyWeek = () => {
     const currentDate = new Date()
     const holyWeekEndDate = new Date("2024-04-21")
-
-    if (currentDate < holyWeekEndDate) {
-      setShowHolyWeekMessage(true)
-    }
-  }, [])
+    return currentDate < holyWeekEndDate
+  }
 
   // Check for token on component mount
   useEffect(() => {
@@ -109,13 +108,6 @@ export default function LoginPage() {
   }
 
   const handleAutoLogin = async (userCode: string, userPassword: string) => {
-    // If during Holy Week, don't attempt login
-    if (showHolyWeekMessage) {
-      setIsLoading(false)
-      setTokenProcessing(false)
-      return
-    }
-
     setIsLoading(true)
 
     try {
@@ -135,14 +127,25 @@ export default function LoginPage() {
         localStorage.setItem("userRole", data.role)
         localStorage.setItem("userCode", userCode)
 
-        // Also store the origin of the login
-        localStorage.setItem("loginOrigin", "sao6_redirect")
+        // Set user info for Holy Week message
+        setUserName(data.name || "Usuario")
+        setUserRole(data.role)
 
-        // Redirect based on role
-        if (data.role === "admin" || data.role === "testers") {
-          router.push("/dashboard-admin-requests")
+        // Check if during Holy Week
+        if (isDuringHolyWeek()) {
+          setShowHolyWeekMessage(true)
+          setIsLoading(false)
+          setTokenProcessing(false)
         } else {
-          router.push("/dashboard")
+          // Also store the origin of the login
+          localStorage.setItem("loginOrigin", "sao6_redirect")
+
+          // Redirect based on role
+          if (data.role === "admin" || data.role === "testers") {
+            router.push("/dashboard-admin-requests")
+          } else {
+            router.push("/dashboard")
+          }
         }
       } else {
         setTokenProcessing(false)
@@ -166,12 +169,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // If during Holy Week, don't attempt login
-    if (showHolyWeekMessage) {
-      return
-    }
-
     setIsLoading(true)
     setError("")
 
@@ -193,14 +190,26 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
+        // Store authentication data
         localStorage.setItem("accessToken", data.access_token)
         localStorage.setItem("userRole", data.role)
         localStorage.setItem("userCode", code)
 
-        if (data.role === "admin" || data.role === "testers") {
-          router.push("/dashboard-admin-requests")
+        // Set user info for Holy Week message
+        setUserName(data.name || "Usuario")
+        setUserRole(data.role)
+
+        // Check if during Holy Week
+        if (isDuringHolyWeek()) {
+          setShowHolyWeekMessage(true)
+          setIsLoading(false)
         } else {
-          router.push("/dashboard")
+          // Redirect based on role
+          if (data.role === "admin" || data.role === "testers") {
+            router.push("/dashboard-admin-requests")
+          } else {
+            router.push("/dashboard")
+          }
         }
       } else {
         setLoginAttempts((prevAttempts) => {
@@ -211,16 +220,16 @@ export default function LoginPage() {
           return newAttempts
         })
         setError(data.msg || "Credenciales inválidas")
+        setIsLoading(false)
       }
     } catch (error) {
       setError("Ocurrió un error. Por favor, intente nuevamente.")
       console.error("Error de inicio de sesión:", error)
-    } finally {
       setIsLoading(false)
     }
   }
 
-  // If showing Holy Week message, render that instead of the login form
+  // If showing Holy Week message after successful login
   if (showHolyWeekMessage) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center p-4">
@@ -274,7 +283,8 @@ export default function LoginPage() {
               className="py-6 px-8 bg-gradient-to-r from-green-50 to-white rounded-xl border border-green-200 shadow-inner"
             >
               <p className="text-green-800 font-medium text-lg text-center">
-                Estaremos de vuelta el lunes para atender todas sus solicitudes con renovada energía y compromiso.
+                Hola {userName}, estaremos de vuelta el lunes para atender todas sus solicitudes con renovada energía y
+                compromiso.
               </p>
             </motion.div>
 
@@ -309,10 +319,20 @@ export default function LoginPage() {
               className="flex justify-center"
             >
               <Button
-                onClick={() => setShowHolyWeekMessage(false)}
+                onClick={() => {
+                  // Clear session data
+                  localStorage.removeItem("accessToken")
+                  localStorage.removeItem("userRole")
+                  localStorage.removeItem("userCode")
+
+                  // Return to login
+                  setShowHolyWeekMessage(false)
+                  setCode("")
+                  setPassword("")
+                }}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                Entendido, continuar al inicio de sesión
+                Cerrar sesión
               </Button>
             </motion.div>
           </div>
