@@ -4,11 +4,11 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, User, Lock, CheckCircle, CalendarDays, Heart } from "lucide-react"
+import { Eye, EyeOff, User, Lock, CheckCircle, CalendarDays, Heart, X } from "lucide-react"
 import LoadingOverlay from "@/components/loading-overlay"
 import Image from "next/image"
 import { ErrorModal } from "@/components/error-modal"
@@ -28,9 +28,10 @@ export default function LoginPage() {
   const [tokenProcessing, setTokenProcessing] = useState(false)
   const [tokenMessage, setTokenMessage] = useState("")
   const [tokenVerified, setTokenVerified] = useState(false)
-  const [showHolyWeekMessage, setShowHolyWeekMessage] = useState(false)
+  const [showHolyWeekModal, setShowHolyWeekModal] = useState(false)
   const [userName, setUserName] = useState("")
   const [userRole, setUserRole] = useState("")
+  const [loginSuccess, setLoginSuccess] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -40,6 +41,33 @@ export default function LoginPage() {
     const currentDate = new Date()
     const holyWeekEndDate = new Date("2024-04-21")
     return currentDate < holyWeekEndDate
+  }
+
+  // Handle successful login
+  const handleSuccessfulLogin = (data: any, userCode: string) => {
+    // Store authentication data
+    localStorage.setItem("accessToken", data.access_token)
+    localStorage.setItem("userRole", data.role)
+    localStorage.setItem("userCode", userCode)
+
+    // Set user info for Holy Week message
+    setUserName(data.name || "Usuario")
+    setUserRole(data.role)
+    setLoginSuccess(true)
+
+    // Check if during Holy Week
+    if (isDuringHolyWeek()) {
+      setShowHolyWeekModal(true)
+      setIsLoading(false)
+      setTokenProcessing(false)
+    } else {
+      // Redirect based on role
+      if (data.role === "admin" || data.role === "testers") {
+        router.push("/dashboard-admin-requests")
+      } else {
+        router.push("/dashboard")
+      }
+    }
   }
 
   // Check for token on component mount
@@ -122,31 +150,7 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store authentication data
-        localStorage.setItem("accessToken", data.access_token)
-        localStorage.setItem("userRole", data.role)
-        localStorage.setItem("userCode", userCode)
-
-        // Set user info for Holy Week message
-        setUserName(data.name || "Usuario")
-        setUserRole(data.role)
-
-        // Check if during Holy Week
-        if (isDuringHolyWeek()) {
-          setShowHolyWeekMessage(true)
-          setIsLoading(false)
-          setTokenProcessing(false)
-        } else {
-          // Also store the origin of the login
-          localStorage.setItem("loginOrigin", "sao6_redirect")
-
-          // Redirect based on role
-          if (data.role === "admin" || data.role === "testers") {
-            router.push("/dashboard-admin-requests")
-          } else {
-            router.push("/dashboard")
-          }
-        }
+        handleSuccessfulLogin(data, userCode)
       } else {
         setTokenProcessing(false)
         setLoginAttempts((prevAttempts) => {
@@ -190,27 +194,7 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store authentication data
-        localStorage.setItem("accessToken", data.access_token)
-        localStorage.setItem("userRole", data.role)
-        localStorage.setItem("userCode", code)
-
-        // Set user info for Holy Week message
-        setUserName(data.name || "Usuario")
-        setUserRole(data.role)
-
-        // Check if during Holy Week
-        if (isDuringHolyWeek()) {
-          setShowHolyWeekMessage(true)
-          setIsLoading(false)
-        } else {
-          // Redirect based on role
-          if (data.role === "admin" || data.role === "testers") {
-            router.push("/dashboard-admin-requests")
-          } else {
-            router.push("/dashboard")
-          }
-        }
+        handleSuccessfulLogin(data, code)
       } else {
         setLoginAttempts((prevAttempts) => {
           const newAttempts = prevAttempts + 1
@@ -229,119 +213,19 @@ export default function LoginPage() {
     }
   }
 
-  // If showing Holy Week message after successful login
-  if (showHolyWeekMessage) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="max-w-3xl w-full bg-white border-2 border-green-200 rounded-2xl shadow-xl overflow-hidden mb-8"
-        >
-          <div className="bg-gradient-to-r from-green-600 to-green-500 p-6 text-white text-center">
-            <div className="flex justify-center mb-2">
-              <Image src="/sao6.png" alt="Logo" width={80} height={80} />
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold">Aviso Importante</h2>
-          </div>
+  const handleCloseHolyWeekModal = () => {
+    setShowHolyWeekModal(false)
+    // Clear form fields
+    setCode("")
+    setPassword("")
+    setLoginSuccess(false)
 
-          <div className="p-8 md:p-10 space-y-8">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="flex flex-col items-center"
-            >
-              <div className="inline-block p-2 bg-green-100 rounded-full mb-4">
-                <CalendarDays className="h-8 w-8 text-green-600" />
-              </div>
-
-              <div className="relative w-full max-w-md">
-                <div className="absolute inset-0 bg-green-200 rounded-lg transform rotate-1"></div>
-                <div className="relative bg-green-100 p-6 rounded-lg border border-green-300">
-                  <p className="text-xl md:text-2xl text-green-800 font-medium text-center">
-                    El enlace de permisos estará cerrado hasta el{" "}
-                    <span className="font-bold text-green-700 inline-block relative">
-                      Lunes 21 de Abril
-                      <motion.span
-                        className="absolute bottom-0 left-0 w-full h-1 bg-green-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: "100%" }}
-                        transition={{ delay: 0.5, duration: 0.8 }}
-                      ></motion.span>
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="py-6 px-8 bg-gradient-to-r from-green-50 to-white rounded-xl border border-green-200 shadow-inner"
-            >
-              <p className="text-green-800 font-medium text-lg text-center">
-                Hola {userName}, estaremos de vuelta el lunes para atender todas sus solicitudes con renovada energía y
-                compromiso.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-              className="pt-6 border-t border-green-100"
-            >
-              <div className="flex items-center justify-center mb-4">
-                <Heart className="h-6 w-6 text-green-600 mr-2" />
-                <h3 className="text-xl font-semibold text-green-700">Mensaje Especial</h3>
-              </div>
-
-              <div className="bg-white p-6 rounded-xl border border-green-100 shadow-sm">
-                <p className="italic text-gray-700 text-lg leading-relaxed">
-                  SAO6 les desea una bendecida y reflexiva Semana Santa. Que estos días sagrados traigan paz a sus
-                  corazones y les permitan disfrutar momentos inolvidables junto a sus seres queridos. Aprovechemos este
-                  tiempo para renovar nuestra fe, fortalecer nuestros lazos familiares y recordar los valores que nos
-                  unen como comunidad.
-                </p>
-                <div className="mt-4 text-right">
-                  <span className="text-green-600 font-semibold">— Equipo SAO6</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-              className="flex justify-center"
-            >
-              <Button
-                onClick={() => {
-                  // Clear session data
-                  localStorage.removeItem("accessToken")
-                  localStorage.removeItem("userRole")
-                  localStorage.removeItem("userCode")
-
-                  // Return to login
-                  setShowHolyWeekMessage(false)
-                  setCode("")
-                  setPassword("")
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Cerrar sesión
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
-    )
+    // Clear session data
+    localStorage.removeItem("accessToken")
+    localStorage.removeItem("userRole")
+    localStorage.removeItem("userCode")
   }
 
-  // Regular login form
   return (
     <div className="min-h-screen from-green-50 flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
@@ -472,6 +356,104 @@ export default function LoginPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Holy Week Modal */}
+      <AnimatePresence>
+        {showHolyWeekModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="max-w-3xl w-full bg-white border-2 border-green-200 rounded-2xl shadow-xl overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-green-600 to-green-500 p-6 text-white text-center relative">
+                <button
+                  onClick={handleCloseHolyWeekModal}
+                  className="absolute right-4 top-4 text-white hover:text-green-100 transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+                <div className="flex justify-center mb-2">
+                  <Image src="/sao6.png" alt="Logo" width={80} height={80} />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold">Aviso Importante</h2>
+              </div>
+
+              <div className="p-8 md:p-10 space-y-8">
+                <div className="flex flex-col items-center">
+                  <div className="inline-block p-2 bg-green-100 rounded-full mb-4">
+                    <CalendarDays className="h-8 w-8 text-green-600" />
+                  </div>
+
+                  <div className="relative w-full max-w-md">
+                    <div className="absolute inset-0 bg-green-200 rounded-lg transform rotate-1"></div>
+                    <div className="relative bg-green-100 p-6 rounded-lg border border-green-300">
+                      <p className="text-xl md:text-2xl text-green-800 font-medium text-center">
+                        El enlace de permisos estará cerrado hasta el{" "}
+                        <span className="font-bold text-green-700 inline-block relative">
+                          Lunes 21 de Abril
+                          <motion.span
+                            className="absolute bottom-0 left-0 w-full h-1 bg-green-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                          ></motion.span>
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="py-6 px-8 bg-gradient-to-r from-green-50 to-white rounded-xl border border-green-200 shadow-inner">
+                  <p className="text-green-800 font-medium text-lg text-center">
+                    {loginSuccess ? (
+                      <>
+                        Hola <span className="font-bold">{userName}</span>, estaremos de vuelta el lunes para atender
+                        todas sus solicitudes con renovada energía y compromiso.
+                      </>
+                    ) : (
+                      "Estaremos de vuelta el lunes para atender todas sus solicitudes con renovada energía y compromiso."
+                    )}
+                  </p>
+                </div>
+
+                <div className="pt-6 border-t border-green-100">
+                  <div className="flex items-center justify-center mb-4">
+                    <Heart className="h-6 w-6 text-green-600 mr-2" />
+                    <h3 className="text-xl font-semibold text-green-700">Mensaje Especial</h3>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl border border-green-100 shadow-sm">
+                    <p className="italic text-gray-700 text-lg leading-relaxed">
+                      SAO6 les desea una bendecida y reflexiva Semana Santa. Que estos días sagrados traigan paz a sus
+                      corazones y les permitan disfrutar momentos inolvidables junto a sus seres queridos. Aprovechemos
+                      este tiempo para renovar nuestra fe, fortalecer nuestros lazos familiares y recordar los valores
+                      que nos unen como comunidad.
+                    </p>
+                    <div className="mt-4 text-right">
+                      <span className="text-green-600 font-semibold">— Equipo SAO6</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <Button onClick={handleCloseHolyWeekModal} className="bg-green-600 hover:bg-green-700 text-white">
+                    Entendido
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isLoading && <LoadingOverlay />}
       <ErrorModal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} />
