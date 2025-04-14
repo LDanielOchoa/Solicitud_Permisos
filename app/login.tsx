@@ -55,18 +55,17 @@ export default function LoginPage() {
     setUserRole(data.role)
     setLoginSuccess(true)
 
-    // Check if during Holy Week
-    if (isDuringHolyWeek()) {
+    // Check if user is admin or tester
+    const isAdminOrTester = data.role === "admin" || data.role === "testers"
+
+    if (isAdminOrTester) {
+      // Admin users always get redirected to dashboard-admin-requests
+      router.push("/dashboard-admin-requests")
+    } else {
+      // Regular users see the Holy Week message modal
       setShowHolyWeekModal(true)
       setIsLoading(false)
       setTokenProcessing(false)
-    } else {
-      // Redirect based on role
-      if (data.role === "admin" || data.role === "testers") {
-        router.push("/dashboard-admin-requests")
-      } else {
-        router.push("/dashboard")
-      }
     }
   }
 
