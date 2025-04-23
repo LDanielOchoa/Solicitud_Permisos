@@ -612,9 +612,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 overflow-x-hidden transition-colors duration-300">
       <Toaster position="top-right" />
 
-      {/* Modal de novedades */}
-      <AnimatePresence>{showWhatsNewModal && <WhatsNewModal onClose={handleCloseWhatsNewModal} />}</AnimatePresence>
-
+   
       <EnhancedNotifications
         hasNewNotification={hasNewNotification}
         userName={userData.name}
