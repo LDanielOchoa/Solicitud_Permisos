@@ -606,14 +606,14 @@ export default function EquipmentRequestForm() {
                                   className="cursor-pointer"
                                 >
                                   <input type="radio" name="fixedShift" value={option.title} className="sr-only peer" />
-                                  <div className="bg-white border border-gray-200 rounded-xl p-4 transition-all duration-200 peer-checked:shadow-md peer-checked:border-transparent peer-checked:bg-gradient-to-r peer-checked:text-white peer-checked:shadow-lg hover:bg-gray-50 peer-checked:hover:bg-gradient-to-r peer-checked:hover:from-opacity-90 peer-checked:hover:to-opacity-90 peer-checked:from-opacity-100 peer-checked:to-opacity-100 peer-checked:ring-1 peer-checked:ring-white/20 peer-checked:ring-offset-1 peer-checked:ring-offset-white/10 peer-checked:bg-gradient-to-r peer-checked:${option.color}">
+                                  
                                     <div className="flex items-center">
                                       <div className="bg-gray-100 peer-checked:bg-white/20 p-2 rounded-lg mr-3 transition-colors">
                                         {option.icon}
                                       </div>
                                       <span className="font-medium">{option.title}</span>
                                     </div>
-                                  </div>
+                                  
                                 </motion.label>
                               ))}
                             </div>

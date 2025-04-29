@@ -18,7 +18,6 @@ import LoadingOverlay from "../../components/loading-overlay"
 import BottomNavigation from "../../components/bottom-navigation"
 import UserInfoCard from "@/components/user-info-card"
 import { toast } from "@/components/ui/use-toast"
-
 const getCurrentWeekDates = (testDate = null) => {
   const now = testDate || new Date() // Permitir una fecha de prueba o usar la actual
   const currentDay = now.getDay() // 0 (domingo) a 6 (sábado)
@@ -29,8 +28,8 @@ const getCurrentWeekDates = (testDate = null) => {
   const daysUntilNextMonday = 8 - (currentDay === 0 ? 7 : currentDay)
   startOfNextWeek.setDate(now.getDate() + daysUntilNextMonday)
 
-  // Si es miércoles a las 12 pm o después, avanza otra semana
-  if (currentDay > 3 || (currentDay === 3 && currentHour >= 12)) {
+  // Si es martes a las 12 pm o después, avanza otra semana
+  if (currentDay > 2 || (currentDay === 2 && currentHour >= 12)) {
     startOfNextWeek.setDate(startOfNextWeek.getDate() + 7)
   }
 
