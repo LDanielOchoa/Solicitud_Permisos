@@ -2,34 +2,31 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, AlertCircle, Calendar, Clock, FileText, Tag, CheckCircle, Info } from "lucide-react"
+import { Loader2, AlertCircle, Calendar, Clock, FileText, CheckCircle, Info } from 'lucide-react'
 import { format, addDays, isSameDay, startOfWeek } from "date-fns"
 import { es } from "date-fns/locale"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import LoadingOverlay from "../../components/loading-overlay"
 import BottomNavigation from "../../components/bottom-navigation"
 import UserInfoCard from "@/components/user-info-card"
 import { toast } from "@/components/ui/use-toast"
 
 const getCurrentWeekDates = (testDate = null) => {
-  const now = testDate || new Date() // Permitir una fecha de prueba o usar la actual
-  const currentDay = now.getDay() // 0 (domingo) a 6 (sábado)
+  const now = testDate || new Date() // Allow test date or use current
+  const currentDay = now.getDay() // 0 (Sunday) to 6 (Saturday)
   const currentHour = now.getHours()
 
-  // Encuentra el lunes de la próxima semana
+  // Find next Monday
   const startOfNextWeek = new Date(now)
   const daysUntilNextMonday = 8 - (currentDay === 0 ? 7 : currentDay)
   startOfNextWeek.setDate(now.getDate() + daysUntilNextMonday)
 
-  // Si es miércoles a las 12 pm o después, avanza otra semana
+  // If Wednesday 12pm or later, move to next week
   if (currentDay > 3 || (currentDay === 3 && currentHour >= 12)) {
     startOfNextWeek.setDate(startOfNextWeek.getDate() + 7)
   }
@@ -37,14 +34,81 @@ const getCurrentWeekDates = (testDate = null) => {
   return startOfNextWeek
 }
 
-const isHoliday = (date: Date): boolean => {
+const isHoliday = (date: Date): { isHoliday: boolean; name: string } => {
+  if (!date) return { isHoliday: false, name: "" }
+  
   const year = date.getFullYear()
-  const month = date.getMonth()
+  const month = date.getMonth() // 0-11
   const day = date.getDate()
 
-  if (month === 0 && day === 1) return true
+  // Common holidays in Colombia
+  // January 1 - New Year
+  if (month === 0 && day === 1) return { isHoliday: true, name: "Año Nuevo" }
+  // May 1 - Labor Day
+  if (month === 5 && day === 2) return { isHoliday: true, name: " Dia de la Ascensión" }
+  // July 20 - Independence Day
+  if (month === 6 && day === 20) return { isHoliday: true, name: "Día de la Independencia" }
+  // August 7 - Battle of Boyacá
+  if (month === 7 && day === 7) return { isHoliday: true, name: "Batalla de Boyacá" }
+  // December 8 - Immaculate Conception
+  if (month === 11 && day === 8) return { isHoliday: true, name: "Inmaculada Concepción" }
+  // December 25 - Christmas
+  if (month === 11 && day === 25) return { isHoliday: true, name: "Navidad" }
 
-  return false
+  return { isHoliday: false, name: "" }
+}
+
+const getUpcomingHolidays = (dates: Date[]): Date[] => {
+  const currentDate = new Date()
+  const twoWeeksLater = new Date()
+  twoWeeksLater.setDate(currentDate.getDate() + 14)
+
+  const upcomingDates: Date[] = []
+  const date = new Date(currentDate)
+
+  while (date <= twoWeeksLater) {
+    upcomingDates.push(new Date(date))
+    date.setDate(date.getDate() + 1)
+  }
+
+  return upcomingDates.filter((date) => isHoliday(date).isHoliday)
+}
+
+const getCalendarDatesWithHolidays = () => {
+  // Get base date for current week
+  const startDate = getCurrentWeekDates()
+  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 })
+
+  // Generate dates for current week
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(weekStart, i)
+    return date
+  })
+
+  // Get upcoming holidays within next 14 days
+  const currentDate = new Date()
+  const twoWeeksLater = new Date()
+  twoWeeksLater.setDate(currentDate.getDate() + 14)
+
+  const upcomingDates = []
+  const date = new Date(currentDate)
+
+  while (date <= twoWeeksLater) {
+    upcomingDates.push(new Date(date))
+    date.setDate(date.getDate() + 1)
+  }
+
+  const upcomingHolidays = upcomingDates.filter(date => 
+    isHoliday(date).isHoliday && 
+    !weekDates.some(weekDate => isSameDay(weekDate, date))
+  )
+
+  // Return both regular dates and holidays
+  return {
+    regularDates: weekDates,
+    allDates: [...weekDates, ...upcomingHolidays.slice(0, 3)], // Show max 3 additional holidays
+    upcomingHolidays: upcomingHolidays,
+  }
 }
 
 const checkExistingPermits = async (dates: string[]) => {
@@ -76,6 +140,10 @@ const checkExistingPermits = async (dates: string[]) => {
 }
 
 export default function PermitRequestForm() {
+  // Add at the beginning of the component
+  const [weekDates, setWeekDates] = useState<Date[]>([
+    new Date(), new Date(), new Date(), new Date(), new Date(), new Date(), new Date()
+  ])
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -89,68 +157,74 @@ export default function PermitRequestForm() {
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
   const [isLicenseNotificationOpen, setIsLicenseNotificationOpen] = useState(false)
   const [hasShownLicenseNotification, setHasShownLicenseNotification] = useState(false)
-  const [weekDates, setWeekDates] = useState<Date[]>([])
   const [showValidationDialog, setShowValidationDialog] = useState(false)
   const [hasNewNotification, setHasNewNotification] = useState(false)
   const [formProgress, setFormProgress] = useState(0)
-  const router = useRouter()
+  const [upcomingHolidays, setUpcomingHolidays] = useState<Date[]>([])
+  const router = { push: (path: string) => window.location.href = path }
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem("accessToken")
+  const fetchUserData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("accessToken")
 
-        if (!token) {
-          router.push("/")
-          return
-        }
-
-        const response = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        })
-
-        if (response.status === 401) {
-          localStorage.removeItem("accessToken")
-          router.push("/")
-          return
-        }
-
-        if (!response.ok) {
-          throw new Error("Error al obtener datos del usuario")
-        }
-
-        const data = await response.json()
-        setUserData({ code: data.code, name: data.name, phone: data.phone || "" })
-
-        // Check for notifications
-        const storedNotifications = localStorage.getItem("dashboardNotifications")
-        if (storedNotifications) {
-          const parsedNotifications = JSON.parse(storedNotifications)
-          setHasNewNotification(parsedNotifications.some((n: any) => n.isNew))
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error)
-        setError("No se pudieron cargar los datos del usuario. Por favor, inicie sesión nuevamente.")
-      } finally {
-        setIsLoading(false)
+      if (!token) {
+        router.push("/")
+        return
       }
-    }
 
-    fetchUserData()
+      const response = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.status === 401) {
+        localStorage.removeItem("accessToken")
+        router.push("/")
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error("Error al obtener datos del usuario")
+      }
+
+      const data = await response.json()
+      setUserData({ code: data.code, name: data.name, phone: data.phone || "" })
+
+      // Check for notifications
+      const storedNotifications = localStorage.getItem("dashboardNotifications")
+      if (storedNotifications) {
+        const parsedNotifications = JSON.parse(storedNotifications)
+        setHasNewNotification(parsedNotifications.some((n: any) => n.isNew))
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error)
+      setError("No se pudieron cargar los datos del usuario. Por favor, inicie sesión nuevamente.")
+    } finally {
+      setIsLoading(false)
+    }
   }, [router])
 
   useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
+
+  useEffect(() => {
     const updateDates = () => {
-      const startDate = getCurrentWeekDates()
-      setWeekDates(Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(startDate, { weekStartsOn: 1 }), i)))
+      const { regularDates, allDates, upcomingHolidays } = getCalendarDatesWithHolidays()
+      setWeekDates(allDates)
+      setUpcomingHolidays(upcomingHolidays)
+      // Force re-render
+      setIsLoading(false)
     }
 
-    updateDates() // Initial update
-    const timer = setInterval(updateDates, 60000) // Check every minute
+    // Initial update
+    updateDates() 
+    
+    // Check every minute
+    const timer = setInterval(updateDates, 60000) 
 
     return () => clearInterval(timer)
   }, [])
@@ -464,7 +538,6 @@ export default function PermitRequestForm() {
         }
       `}</style>
 
-
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -476,7 +549,6 @@ export default function PermitRequestForm() {
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-green-50 rounded-full opacity-30 transform -translate-x-20 translate-y-20"></div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-3 sm:space-y-6 form-container">
-
           {/* User Info Card */}
           <UserInfoCard
             code={userData.code}
@@ -564,7 +636,6 @@ export default function PermitRequestForm() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.5 }}
               >
-
                 {!noveltyType ? (
                   <motion.div
                     className="bg-white/90 p-6 rounded-xl shadow-sm border border-green-100 flex items-center justify-center hover-scale"
@@ -597,9 +668,11 @@ export default function PermitRequestForm() {
                       </p>
                     </div>
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 calendar-grid">
-                      {weekDates.map((date, index) => {
+                      {weekDates.slice(0, 7).map((date, index) => {
                         const isDateSelected = selectedDates.some((d) => isSameDay(d, date))
-                        const isDateHoliday = isHoliday(date)
+                        const holidayInfo = isHoliday(date)
+                        const isDateHoliday = holidayInfo.isHoliday
+                        const holidayName = holidayInfo.name
                         const isDisabled = noveltyType === "semanaAM" || noveltyType === "semanaPM"
                         return (
                           <motion.button
@@ -610,22 +683,33 @@ export default function PermitRequestForm() {
                             className={`calendar-day p-3 rounded-lg flex flex-col items-center justify-center transition-all duration-200 ${
                               isDateSelected
                                 ? "bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg"
-                                : "bg-white hover:bg-green-50 border border-green-200 hover:border-green-300 hover:shadow-md"
+                                : isDateHoliday
+                                  ? "bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 hover:shadow-md"
+                                  : "bg-white hover:bg-green-50 border border-green-200 hover:border-green-300 hover:shadow-md"
                             } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                             onClick={() => handleDateSelect(date)}
                             disabled={isDisabled}
                           >
                             {isDateHoliday && (
-                              <span className="text-[10px] bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full -mt-1 mb-1">
+                              <span
+                                className="text-[10px] bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full -mt-1 mb-1"
+                                title={holidayName}
+                              >
                                 Festivo
                               </span>
                             )}
                             <span
-                              className={`text-xs font-medium ${isDateSelected ? "text-green-100" : "text-green-600"} date-text`}
+                              className={`text-xs font-medium ${
+                                isDateSelected ? "text-green-100" : isDateHoliday ? "text-red-600" : "text-green-600"
+                              } date-text`}
                             >
                               {format(date, "EEE", { locale: es })}
                             </span>
-                            <span className="text-lg font-bold mt-1">{format(date, "d")}</span>
+                            <span
+                              className={`text-lg font-bold mt-1 ${isDateHoliday && !isDateSelected ? "text-red-500" : ""}`}
+                            >
+                              {format(date, "d")}
+                            </span>
                             {isDateSelected && (
                               <motion.div
                                 initial={{ scale: 0 }}
@@ -639,6 +723,64 @@ export default function PermitRequestForm() {
                         )
                       })}
                     </div>
+
+                    {/* Próximos festivos como días seleccionables */}
+                    {weekDates.length > 7 && (
+                      <div className="mt-6">
+                        <div className="flex items-center mb-2">
+                          <div className="bg-red-100 rounded-full p-1 mr-2 shadow-sm">
+                            <Calendar className="h-4 w-4 text-red-600" />
+                          </div>
+                          <p className="text-sm text-red-700 font-medium">Festivos próximos:</p>
+                        </div>
+                        <div className="grid grid-cols-4 sm:grid-cols-auto-fill gap-2">
+                          {weekDates.slice(7).map((date, index) => {
+                            const isDateSelected = selectedDates.some((d) => isSameDay(d, date))
+                            const holidayInfo = isHoliday(date)
+                            const isDisabled = noveltyType === "semanaAM" || noveltyType === "semanaPM"
+
+                            return (
+                              <motion.button
+                                key={`holiday-${index}`}
+                                type="button"
+                                whileHover={{ scale: isDisabled ? 1 : 1.05, y: isDisabled ? 0 : -2 }}
+                                whileTap={{ scale: isDisabled ? 1 : 0.95 }}
+                                className={`calendar-day p-3 rounded-lg flex flex-col items-center justify-center transition-all duration-200 ${
+                                  isDateSelected
+                                    ? "bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg"
+                                    : "bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 hover:shadow-md"
+                                } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                onClick={() => handleDateSelect(date)}
+                                disabled={isDisabled}
+                                title={holidayInfo.name}
+                              >
+                                <span className="text-[10px] bg-red-100 text-red-600 font-medium px-2 py-0.5 rounded-full -mt-1 mb-1">
+                                  {format(date, "dd MMM", { locale: es })}
+                                </span>
+                                <span
+                                  className={`text-xs font-medium ${isDateSelected ? "text-green-100" : "text-red-600"} date-text`}
+                                >
+                                  {format(date, "EEE", { locale: es })}
+                                </span>
+                                <span className={`text-lg font-bold mt-1 ${!isDateSelected ? "text-red-500" : ""}`}>
+                                  {format(date, "d")}
+                                </span>
+                                <span className="text-[9px] text-red-700 mt-1 font-medium">{holidayInfo.name}</span>
+                                {isDateSelected && (
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="mt-1 bg-white bg-opacity-30 rounded-full p-0.5"
+                                  >
+                                    <CheckCircle className="h-3 w-3" />
+                                  </motion.div>
+                                )}
+                              </motion.button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                     {selectedDates.length > 0 && (
                       <motion.div
                         className="mt-4 bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border border-green-200 shadow-inner"
@@ -748,8 +890,7 @@ export default function PermitRequestForm() {
                     placeholder="Ingrese el detalle de tu solicitud"
                     className="min-h-[120px] border-green-200 focus:ring-green-500 bg-white/90 shadow-sm rounded-xl pl-10 pt-8 group-hover:border-green-300 transition-all duration-300"
                   />
-                  <div className="absolute left-3 top-3 text-green-500">
-                  </div>
+                  <div className="absolute left-3 top-3 text-green-500"></div>
                 </div>
               </motion.div>
             </motion.div>
@@ -1091,6 +1232,27 @@ export default function PermitRequestForm() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Holiday information section */}
+      <motion.div
+        className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-200 shadow-inner"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <div className="flex items-start">
+          <div className="bg-white rounded-full p-1 mr-2 shadow-sm mt-1">
+            <Info className="h-4 w-4 text-yellow-600" />
+          </div>
+          <div>
+            <p className="text-sm text-yellow-700 font-medium mb-1">Información de festivos</p>
+            <p className="text-xs text-yellow-600">
+              Las fechas festivas se muestran en color rojo. Puede seleccionar tanto los días de la semana actual como
+              los festivos próximos para solicitar permisos.
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Bottom Navigation */}
       <BottomNavigation hasNewNotification={hasNewNotification} />
