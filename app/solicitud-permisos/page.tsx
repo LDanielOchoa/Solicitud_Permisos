@@ -79,13 +79,12 @@ const getCalendarDatesWithHolidays = () => {
   const startDate = getCurrentWeekDates()
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 })
 
-  // Generate dates for current week
+  // Generate dates for current week, excluding holidays
   const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(weekStart, i)
-    return date
-  })
+    return addDays(weekStart, i)
+  }).filter(date => !isHoliday(date).isHoliday)
 
-  // Get upcoming holidays within next 14 days
+  // Get upcoming holidays within next 14 days (just for reference, but not shown)
   const currentDate = new Date()
   const twoWeeksLater = new Date()
   twoWeeksLater.setDate(currentDate.getDate() + 14)
@@ -99,15 +98,14 @@ const getCalendarDatesWithHolidays = () => {
   }
 
   const upcomingHolidays = upcomingDates.filter(date => 
-    isHoliday(date).isHoliday && 
-    !weekDates.some(weekDate => isSameDay(weekDate, date))
+    isHoliday(date).isHoliday
   )
 
-  // Return both regular dates and holidays
+  // Return only non-holiday dates
   return {
     regularDates: weekDates,
-    allDates: [...weekDates, ...upcomingHolidays.slice(0, 3)], // Show max 3 additional holidays
-    upcomingHolidays: upcomingHolidays,
+    allDates: weekDates, // No incluimos los días festivos
+    upcomingHolidays: upcomingHolidays, // Mantenemos esta información por si se necesita
   }
 }
 
