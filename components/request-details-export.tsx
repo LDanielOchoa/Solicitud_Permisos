@@ -1,1 +1,1 @@
-export { RequestDetails as default } from './request-details';
+export { default as RequestDetails } from './request-details';
