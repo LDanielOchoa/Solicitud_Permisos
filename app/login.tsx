@@ -258,7 +258,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("https://solicitud-permisos.onrender.com/auth/login", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -343,7 +343,7 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch("https://solicitud-permisos.onrender.com/auth/login", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

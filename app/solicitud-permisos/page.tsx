@@ -116,7 +116,7 @@ const checkExistingPermits = async (dates: string[]) => {
       throw new Error("No se encontró el token de acceso")
     }
 
-    const response = await fetch("https://solicitud-permisos.onrender.com/check-existing-permits", {
+    const response = await fetch("https://solicitud-permisos.sao6.com.co/api/check-existing-permits", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -171,7 +171,7 @@ export default function PermitRequestForm() {
         return
       }
 
-      const response = await fetch("https://solicitud-permisos.onrender.com/auth/user", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/auth/user", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -262,7 +262,7 @@ export default function PermitRequestForm() {
         throw new Error("No se encontró el token de acceso")
       }
 
-      const response = await fetch("https://solicitud-permisos.onrender.com/update-phone", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/update-phone", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -353,7 +353,7 @@ export default function PermitRequestForm() {
       }
 
       console.log("Sending request to server...")
-      const response = await fetch("https://solicitud-permisos.onrender.com/permit-request", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/permit-request", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

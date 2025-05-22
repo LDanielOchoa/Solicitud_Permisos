@@ -308,7 +308,7 @@ export default function Dashboard() {
           const token = localStorage.getItem("accessToken")
 
           if (token) {
-            fetch("https://solicitud-permisos.onrender.com/auth/user", {
+            fetch("https://solicitud-permisos.sao6.com.co/api/auth/user", {
               headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -442,7 +442,7 @@ export default function Dashboard() {
       }
 
       // Obtener solicitudes reales de la API
-      const response = await fetch("https://solicitud-permisos.onrender.com/solicitudes", {
+      const response = await fetch("https://solicitud-permisos.sao6.com.co/api/solicitudes", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
