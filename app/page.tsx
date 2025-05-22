@@ -1,12 +1,13 @@
-'use client'
+"use client"
+import React from 'react';
+import NotFound from './NotFound/NotFound';
 
-import { Suspense } from 'react'
-import LoginPage from './login'
-
-export default function Page() {
+function App() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginPage />
-    </Suspense>
-  )
+    <div className="app">
+      <NotFound />
+    </div>
+  );
 }
+
+export default App;
