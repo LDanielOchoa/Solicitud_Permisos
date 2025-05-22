@@ -1,12 +1,14 @@
 'use client'
 
-import { Suspense } from 'react'
-import LoginPage from './login'
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 
 export default function Page() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginPage />
-    </Suspense>
-  )
+  const router = useRouter()
+
+  useEffect(() => {
+    router.push('https://solicitud-permisos.sao6.com.co/')
+  }, [])
+
+  return null
 }

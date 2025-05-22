@@ -275,11 +275,9 @@ function FilePreviewModal({ file, onClose }: { file: FileInfo, onClose: () => vo
 
           <div className="relative flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
             {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10">
-                <div className="flex flex-col items-center">
-                  <Loader className="w-8 h-8 text-emerald-500 animate-spin" />
-                  <p className="mt-2 text-emerald-600 dark:text-emerald-400">Cargando archivo...</p>
-                </div>
+              <div className="flex flex-col items-center">
+                <Loader className="w-8 h-8 text-emerald-500 animate-spin" />
+                <p className="mt-2 text-emerald-600 dark:text-emerald-400">Cargando archivo...</p>
               </div>
             )}
 
@@ -959,7 +957,7 @@ function HistorySection({ isLoading, error, history }: {
 }
 
 // Main Component
-export default function RequestDetails({ requests, onClose, onAction }: RequestDetailsProps) {
+const RequestDetails = ({ requests, onClose, onAction }: RequestDetailsProps) => {
   const [reason, setReason] = useState("")
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null)
   const [currentRequestIndex, setCurrentRequestIndex] = useState(0)
@@ -974,27 +972,96 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     document.body.style.overflow = "hidden"
     
     const fetchHistory = async () => {
-      setIsLoadingHistory(true)
-      setHistoryError(null)
-      try {
-        const response = await fetch(`https://solicitud-permisos.sao6.com.co/api/api/history/${currentRequest.code}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch history")
-        }
-        const data = await response.json()
-        setHistory(data)
-      } catch (error) {
-        console.error("Error fetching history:", error)
-        setHistoryError("Error al cargar el historial. Por favor, intente de nuevo.")
-        toast({
-          title: "Error",
-          description: "Error al cargar el historial",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoadingHistory(false)
-      }
+    if (!currentRequest?.code) {
+      console.warn('No request code available to fetch history');
+      setHistoryError('No se pudo identificar el código de solicitud');
+      setHistory([]);
+      setIsLoadingHistory(false);
+      return;
     }
+
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+    
+    // Use relative URL to avoid CORS issues in development
+    const apiUrl = `https://solicitud-permisos.sao6.com.co/api/history/${encodeURIComponent(currentRequest.code)}`;
+    console.log('Fetching history from:', apiUrl);
+    
+    try {
+      const startTime = performance.now();
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'  // Include cookies for authentication if needed
+      });
+      
+      const responseTime = Math.round(performance.now() - startTime);
+      console.log(`History API [${response.status}] in ${responseTime}ms - ${apiUrl}`);
+      
+      if (!response.ok) {
+        let errorDetails = '';
+        
+        // Handle 404 specifically
+        if (response.status === 404) {
+          setHistoryError('No se encontró historial para este código de usuario');
+          setHistory([]);
+          return;
+        }
+
+        try {
+          const errorData = await response.json().catch(() => ({}));
+          errorDetails = errorData.detail || JSON.stringify(errorData);
+        } catch (e) {
+          errorDetails = await response.text().catch(() => 'Error desconocido');
+        }
+        
+        const errorMessage = response.status === 404 
+          ? 'No se encontró historial para este código de usuario'
+          : `Error ${response.status} al cargar el historial: ${errorDetails}`;
+
+        console.error('History API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: apiUrl,
+          details: errorDetails
+        });
+        
+        setHistoryError(errorMessage);
+        setHistory([]);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('History API Response:', data);
+      
+      if (!Array.isArray(data)) {
+        const errorMsg = `Formato de respuesta inesperado del servidor: ${typeof data}`;
+        console.warn(errorMsg, data);
+        setHistoryError('Error al procesar el historial: formato de datos inválido');
+        setHistory([]);
+        return;
+      }
+      
+      setHistory(data);
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const userMessage = `Error al cargar el historial: ${errorMessage}`;
+      setHistoryError(userMessage);
+      toast({
+        title: "Error",
+        description: userMessage,
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }
     
     fetchHistory()
     
@@ -1239,3 +1306,5 @@ export default function RequestDetails({ requests, onClose, onAction }: RequestD
     </AnimatePresence>
   )
 }
+
+export default RequestDetails

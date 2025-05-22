@@ -838,7 +838,7 @@ export default function PermitsManagement() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate">{request.type}</p>
                           <p className="text-xs text-gray-500">
-                            {format(new Date(request.createdAt), "d MMM, yyyy", { locale: es })}
+                            {request.createdAt ? format(new Date(request.createdAt), "d MMM, yyyy", { locale: es }) : 'Fecha no disponible'}
                           </p>
                         </div>
                       </button>
